@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VintedSniper - Bot Vinted #1 pour le Resell</title>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        :root {
+            --bg: #0a0a1a;
+            --bg2: #111128;
+            --bg3: #1a1a3e;
+            --accent: #00d4ff;
+            --accent2: #7c3aed;
+            --green: #2ecc71;
+            --text: #e0e0f0;
+            --text2: #8888aa;
+            --radius: 16px;
+        }
+        body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); overflow-x:hidden; }
+        a { color: var(--accent); text-decoration: none; }
+
+        /* NAV */
+        nav { display:flex; justify-content:space-between; align-items:center; padding:20px 5%; max-width:1200px; margin:0 auto; }
+        .logo { font-size:24px; font-weight:800; background:linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+        .nav-links { display:flex; gap:20px; align-items:center; }
+        .nav-links a { color:var(--text2); font-size:14px; transition:0.2s; }
+        .nav-links a:hover { color:var(--accent); }
+        .btn { display:inline-block; padding:10px 24px; border-radius:8px; font-weight:600; font-size:14px; cursor:pointer; transition:all 0.3s; border:none; }
+        .btn-primary { background:linear-gradient(135deg, var(--accent), var(--accent2)); color:#fff; }
+        .btn-primary:hover { transform:translateY(-2px); box-shadow:0 8px 30px rgba(0,212,255,0.3); }
+        .btn-outline { border:1px solid var(--accent); color:var(--accent); background:transparent; }
+
+        /* HERO */
+        .hero { text-align:center; padding:80px 5% 60px; max-width:900px; margin:0 auto; position:relative; }
+        .hero::before { content:''; position:absolute; top:0; left:50%; transform:translateX(-50%); width:600px; height:600px; background:radial-gradient(circle, rgba(0,212,255,0.08) 0%, transparent 70%); pointer-events:none; }
+        .badge { display:inline-block; padding:6px 16px; border-radius:20px; background:rgba(0,212,255,0.1); border:1px solid rgba(0,212,255,0.3); color:var(--accent); font-size:13px; margin-bottom:24px; }
+        .hero h1 { font-size:clamp(36px, 6vw, 64px); font-weight:800; line-height:1.1; margin-bottom:20px; }
+        .hero h1 span { background:linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+        .hero p { font-size:18px; color:var(--text2); max-width:600px; margin:0 auto 32px; line-height:1.6; }
+        .hero-btns { display:flex; gap:16px; justify-content:center; flex-wrap:wrap; }
+        .hero-stats { display:flex; gap:40px; justify-content:center; margin-top:48px; }
+        .stat { text-align:center; }
+        .stat-num { font-size:32px; font-weight:800; color:var(--accent); }
+        .stat-label { font-size:13px; color:var(--text2); margin-top:4px; }
+
+        /* FEATURES */
+        .section { padding:80px 5%; max-width:1200px; margin:0 auto; }
+        .section-title { text-align:center; margin-bottom:48px; }
+        .section-title h2 { font-size:36px; font-weight:700; margin-bottom:12px; }
+        .section-title p { color:var(--text2); font-size:16px; }
+        .features-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:24px; }
+        .feature-card { background:var(--bg2); border:1px solid rgba(255,255,255,0.06); border-radius:var(--radius); padding:32px; transition:0.3s; }
+        .feature-card:hover { border-color:rgba(0,212,255,0.3); transform:translateY(-4px); }
+        .feature-icon { font-size:36px; margin-bottom:16px; }
+        .feature-card h3 { font-size:18px; margin-bottom:8px; }
+        .feature-card p { color:var(--text2); font-size:14px; line-height:1.6; }
+
+        /* PRICING */
+        .pricing-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(250px, 1fr)); gap:24px; align-items:start; }
+        .price-card { background:var(--bg2); border:1px solid rgba(255,255,255,0.06); border-radius:var(--radius); padding:32px; position:relative; transition:0.3s; }
+        .price-card.popular { border-color:var(--accent); box-shadow:0 0 40px rgba(0,212,255,0.15); }
+        .price-card.popular::before { content:'POPULAIRE'; position:absolute; top:-12px; left:50%; transform:translateX(-50%); background:linear-gradient(135deg, var(--accent), var(--accent2)); color:#fff; padding:4px 16px; border-radius:20px; font-size:11px; font-weight:700; letter-spacing:1px; }
+        .price-card h3 { font-size:20px; margin-bottom:4px; }
+        .price-card .plan-desc { color:var(--text2); font-size:13px; margin-bottom:16px; }
+        .price-amount { font-size:40px; font-weight:800; margin:16px 0; }
+        .price-amount span { font-size:16px; color:var(--text2); font-weight:400; }
+        .price-features { list-style:none; margin:20px 0; }
+        .price-features li { padding:8px 0; font-size:14px; color:var(--text2); display:flex; align-items:center; gap:8px; }
+        .price-features li::before { content:'✓'; color:var(--green); font-weight:700; }
+        .price-features li.disabled { opacity:0.4; }
+        .price-features li.disabled::before { content:'✕'; color:#666; }
+        .price-card .btn { width:100%; text-align:center; margin-top:16px; padding:14px; font-size:15px; }
+
+        /* HOW IT WORKS */
+        .steps { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:32px; }
+        .step { text-align:center; padding:24px; }
+        .step-num { width:48px; height:48px; border-radius:50%; background:linear-gradient(135deg, var(--accent), var(--accent2)); color:#fff; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:700; margin:0 auto 16px; }
+        .step h3 { margin-bottom:8px; }
+        .step p { color:var(--text2); font-size:14px; line-height:1.6; }
+
+        /* FAQ */
+        .faq-item { background:var(--bg2); border-radius:12px; margin-bottom:12px; overflow:hidden; }
+        .faq-q { padding:20px 24px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; font-weight:600; }
+        .faq-q:hover { color:var(--accent); }
+        .faq-a { padding:0 24px 20px; color:var(--text2); font-size:14px; line-height:1.6; display:none; }
+        .faq-item.open .faq-a { display:block; }
+        .faq-item.open .faq-arrow { transform:rotate(180deg); }
+        .faq-arrow { transition:0.3s; }
+
+        /* FOOTER */
+        footer { text-align:center; padding:40px 5%; border-top:1px solid rgba(255,255,255,0.06); color:var(--text2); font-size:13px; }
+
+        /* RESPONSIVE */
+        @media(max-width:768px) {
+            .hero-stats { gap:20px; }
+            .nav-links { gap:12px; }
+            .pricing-grid { grid-template-columns:1fr; max-width:400px; margin:0 auto; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+    <div class="logo">VintedSniper</div>
+    <div class="nav-links">
+        <a href="#features">Fonctionnalites</a>
+        <a href="#pricing">Tarifs</a>
+        <a href="#faq">FAQ</a>
+        <a href="/login" class="btn btn-outline">Connexion</a>
+        <a href="/register" class="btn btn-primary">Commencer</a>
+    </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+    <div class="badge">Le bot Vinted #1 en France</div>
+    <h1>Trouve les <span>meilleures affaires</span> Vinted avant tout le monde</h1>
+    <p>Notifications instantanees, achat automatique et recherches ultra-rapides. Le bot ultime pour le resell.</p>
+    <div class="hero-btns">
+        <a href="/register" class="btn btn-primary">Commencer gratuitement</a>
+        <a href="#pricing" class="btn btn-outline">Voir les tarifs</a>
+    </div>
+    <div class="hero-stats">
+        <div class="stat"><div class="stat-num">5s</div><div class="stat-label">Temps de scan</div></div>
+        <div class="stat"><div class="stat-num">24/7</div><div class="stat-label">Surveillance</div></div>
+        <div class="stat"><div class="stat-num">100+</div><div class="stat-label">Recherches</div></div>
+        <div class="stat"><div class="stat-num">Discord</div><div class="stat-label">Alertes instant.</div></div>
+    </div>
+</section>
+
+<!-- FEATURES -->
+<section class="section" id="features">
+    <div class="section-title">
+        <h2>Tout ce qu'il faut pour le resell</h2>
+        <p>Des outils professionnels pour trouver et acheter les meilleures affaires</p>
+    </div>
+    <div class="features-grid">
+        <div class="feature-card">
+            <div class="feature-icon">⚡</div>
+            <h3>Scan ultra-rapide</h3>
+            <p>Scan multi-thread toutes les 5 secondes. Sois le premier a voir les nouvelles annonces avant les autres.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">🔔</div>
+            <h3>Notifications instantanees</h3>
+            <p>Discord, Email, SMS et notifications navigateur. Tu ne rates plus aucune bonne affaire.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">🛒</div>
+            <h3>Achat automatique</h3>
+            <p>Configure tes criteres et le bot achete automatiquement les articles qui matchent. Zero delai.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">📊</div>
+            <h3>Dashboard complet</h3>
+            <p>Visualise tes stats, gere tes recherches et suis tes achats en temps reel depuis ton navigateur.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">🔍</div>
+            <h3>Filtres avances</h3>
+            <p>Marques, tailles, prix, categories... Configure des recherches ultra-precises pour maximiser tes profits.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">🔒</div>
+            <h3>Securise</h3>
+            <p>Tes donnees sont chiffrees. Ton compte Vinted est protege. Paiements securises via Stripe & PayPal.</p>
+        </div>
+    </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="section">
+    <div class="section-title">
+        <h2>Comment ca marche ?</h2>
+        <p>3 etapes pour commencer a sniper les meilleures affaires</p>
+    </div>
+    <div class="steps">
+        <div class="step">
+            <div class="step-num">1</div>
+            <h3>Cree ton compte</h3>
+            <p>Inscription gratuite en 30 secondes. Pas de carte bancaire requise pour commencer.</p>
+        </div>
+        <div class="step">
+            <div class="step-num">2</div>
+            <h3>Configure tes recherches</h3>
+            <p>Ajoute tes mots-cles, marques, fourchettes de prix et connecte ton Discord.</p>
+        </div>
+        <div class="step">
+            <div class="step-num">3</div>
+            <h3>Recois les alertes</h3>
+            <p>Le bot scanne Vinted en continu et t'alerte instantanement quand une affaire apparait.</p>
+        </div>
+    </div>
+</section>
+
+<!-- PRICING -->
+<section class="section" id="pricing">
+    <div class="section-title">
+        <h2>Des tarifs simples et transparents</h2>
+        <p>Choisis le plan adapte a ton activite de resell</p>
+    </div>
+    <div class="pricing-grid">
+        <!-- STARTER -->
+        <div class="price-card">
+            <h3>Starter</h3>
+            <div class="plan-desc">Pour decouvrir</div>
+            <div class="price-amount">0 EUR<span>/mois</span></div>
+            <ul class="price-features">
+                <li>2 recherches actives</li>
+                <li>Scan toutes les 2 min</li>
+                <li>Alertes Discord</li>
+                <li class="disabled">Alertes Email</li>
+                <li class="disabled">Achat automatique</li>
+                <li class="disabled">Alertes SMS</li>
+            </ul>
+            <a href="/register" class="btn btn-outline">Commencer</a>
+        </div>
+
+        <!-- BASIC -->
+        <div class="price-card">
+            <h3>Basic</h3>
+            <div class="plan-desc">Pour les revendeurs serieux</div>
+            <div class="price-amount">15 EUR<span>/mois</span></div>
+            <ul class="price-features">
+                <li>10 recherches actives</li>
+                <li>Scan toutes les 30s</li>
+                <li>Alertes Discord</li>
+                <li>Alertes Email</li>
+                <li class="disabled">Achat automatique</li>
+                <li class="disabled">Alertes SMS</li>
+            </ul>
+            <a href="/register?plan=basic" class="btn btn-primary">Choisir Basic</a>
+        </div>
+
+        <!-- PRO -->
+        <div class="price-card popular">
+            <h3>Pro</h3>
+            <div class="plan-desc">Pour les pros du resell</div>
+            <div class="price-amount">50 EUR<span>/mois</span></div>
+            <ul class="price-features">
+                <li>30 recherches actives</li>
+                <li>Scan toutes les 10s</li>
+                <li>Alertes Discord + Email</li>
+                <li>Notifications navigateur</li>
+                <li>Achat automatique</li>
+                <li class="disabled">Alertes SMS</li>
+            </ul>
+            <a href="/register?plan=pro" class="btn btn-primary">Choisir Pro</a>
+        </div>
+
+        <!-- VIP -->
+        <div class="price-card">
+            <h3>VIP</h3>
+            <div class="plan-desc">Puissance maximale</div>
+            <div class="price-amount">90 EUR<span>/mois</span></div>
+            <ul class="price-features">
+                <li>100 recherches actives</li>
+                <li>Scan toutes les 5s</li>
+                <li>Tous les canaux</li>
+                <li>Alertes SMS</li>
+                <li>Achat automatique</li>
+                <li>Support prioritaire</li>
+            </ul>
+            <a href="/register?plan=vip" class="btn btn-primary">Choisir VIP</a>
+        </div>
+    </div>
+</section>
+
+<!-- FAQ -->
+<section class="section" id="faq">
+    <div class="section-title">
+        <h2>Questions frequentes</h2>
+    </div>
+    <div class="faq-list">
+        <div class="faq-item">
+            <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+                Est-ce que c'est legal ?
+                <span class="faq-arrow">&#9660;</span>
+            </div>
+            <div class="faq-a">VintedSniper est un outil de surveillance qui consulte les annonces publiques de Vinted, comme le ferait un navigateur web. Nous ne contournons aucune mesure de securite.</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+                Comment fonctionne l'achat automatique ?
+                <span class="faq-arrow">&#9660;</span>
+            </div>
+            <div class="faq-a">Tu configures tes criteres (marque, prix max, taille) et quand un article correspond, le bot envoie automatiquement une offre ou procede a l'achat. Tu gardes le controle total avec des limites de budget.</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+                Je peux annuler a tout moment ?
+                <span class="faq-arrow">&#9660;</span>
+            </div>
+            <div class="faq-a">Oui, tu peux annuler ton abonnement a tout moment depuis ton dashboard. Tu gardes l'acces jusqu'a la fin de la periode payee.</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+                Quels moyens de paiement acceptez-vous ?
+                <span class="faq-arrow">&#9660;</span>
+            </div>
+            <div class="faq-a">Nous acceptons les cartes bancaires (Visa, Mastercard, etc.) via Stripe et PayPal. Tous les paiements sont securises et chiffres.</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+                Mon compte Vinted est-il en securite ?
+                <span class="faq-arrow">&#9660;</span>
+            </div>
+            <div class="faq-a">Tes informations sont stockees de maniere chiffree sur nos serveurs. Nous n'avons jamais acces a ton mot de passe Vinted en clair.</div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA -->
+<section class="section" style="text-align:center;">
+    <h2 style="font-size:32px; margin-bottom:16px;">Pret a sniper les meilleures affaires ?</h2>
+    <p style="color:var(--text2); margin-bottom:24px;">Rejoins les revendeurs qui utilisent VintedSniper pour gagner du temps et de l'argent.</p>
+    <a href="/register" class="btn btn-primary" style="padding:16px 40px; font-size:16px;">Commencer gratuitement</a>
+</section>
+
+<!-- FOOTER -->
+<footer>
+    <p>&copy; 2026 VintedSniper. Tous droits reserves. | <a href="#">Mentions legales</a> | <a href="#">CGV</a> | <a href="#">Contact</a></p>
+</footer>
+
+</body>
+</html>

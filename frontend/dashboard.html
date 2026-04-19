@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - VintedSniper</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        :root{--bg:#0a0a1a;--bg2:#111128;--bg3:#1a1a3e;--accent:#00d4ff;--accent2:#7c3aed;--green:#2ecc71;--orange:#e67e22;--red:#e74c3c;--text:#e0e0f0;--text2:#8888aa;--radius:12px}
+        body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+        /* SIDEBAR */
+        .sidebar{position:fixed;left:0;top:0;width:240px;height:100vh;background:var(--bg2);border-right:1px solid rgba(255,255,255,0.06);padding:24px 16px;display:flex;flex-direction:column}
+        .sidebar .logo{font-size:20px;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:32px;padding:0 8px}
+        .nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;color:var(--text2);font-size:14px;cursor:pointer;transition:0.2s;margin-bottom:4px}
+        .nav-item:hover,.nav-item.active{background:rgba(0,212,255,0.1);color:var(--accent)}
+        .nav-item .icon{font-size:18px}
+        .sidebar-bottom{margin-top:auto;padding-top:16px;border-top:1px solid rgba(255,255,255,0.06)}
+        .plan-badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;background:rgba(0,212,255,0.15);color:var(--accent)}
+
+        /* MAIN */
+        .main{margin-left:240px;padding:32px}
+        .page-title{font-size:24px;font-weight:700;margin-bottom:24px}
+
+        /* STATS */
+        .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:32px}
+        .stat-card{background:var(--bg2);border:1px solid rgba(255,255,255,0.06);border-radius:var(--radius);padding:20px}
+        .stat-card .label{font-size:12px;color:var(--text2);text-transform:uppercase;letter-spacing:1px}
+        .stat-card .value{font-size:28px;font-weight:700;margin-top:8px}
+        .stat-card .value.accent{color:var(--accent)}
+        .stat-card .value.green{color:var(--green)}
+
+        /* CARDS */
+        .card{background:var(--bg2);border:1px solid rgba(255,255,255,0.06);border-radius:var(--radius);padding:24px;margin-bottom:24px}
+        .card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+        .card-header h3{font-size:16px}
+
+        /* BUTTONS */
+        .btn{padding:8px 18px;border-radius:8px;border:none;font-size:13px;font-weight:600;cursor:pointer;transition:0.2s}
+        .btn-sm{padding:6px 12px;font-size:12px}
+        .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff}
+        .btn-primary:hover{box-shadow:0 4px 20px rgba(0,212,255,0.3)}
+        .btn-danger{background:rgba(231,76,60,0.15);color:var(--red);border:1px solid rgba(231,76,60,0.3)}
+        .btn-success{background:rgba(46,204,113,0.15);color:var(--green);border:1px solid rgba(46,204,113,0.3)}
+        .btn-outline{background:transparent;border:1px solid rgba(255,255,255,0.15);color:var(--text2)}
+
+        /* SEARCH LIST */
+        .search-item{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-radius:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);margin-bottom:8px;transition:0.2s}
+        .search-item:hover{border-color:rgba(0,212,255,0.2)}
+        .search-info{flex:1}
+        .search-info .name{font-weight:600;font-size:14px}
+        .search-info .details{font-size:12px;color:var(--text2);margin-top:4px}
+        .search-actions{display:flex;gap:8px}
+        .status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:8px}
+        .status-dot.active{background:var(--green)}
+        .status-dot.paused{background:var(--orange)}
+
+        /* ITEMS FEED */
+        .item-row{display:flex;gap:12px;padding:12px;border-radius:10px;background:rgba(255,255,255,0.02);margin-bottom:8px;align-items:center;transition:0.2s}
+        .item-row:hover{background:rgba(0,212,255,0.05)}
+        .item-img{width:50px;height:50px;border-radius:8px;object-fit:cover;background:var(--bg3)}
+        .item-info{flex:1}
+        .item-info .title{font-size:14px;font-weight:500}
+        .item-info .meta{font-size:12px;color:var(--text2);margin-top:2px}
+        .item-price{font-size:16px;font-weight:700;color:var(--green)}
+        .item-link{color:var(--accent);font-size:12px;text-decoration:none}
+
+        /* FORM */
+        .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+        .form-group{margin-bottom:12px}
+        .form-group label{display:block;font-size:12px;color:var(--text2);margin-bottom:4px}
+        .form-group input,.form-group select{width:100%;padding:10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:var(--text);font-size:14px;outline:none}
+        .form-group input:focus{border-color:var(--accent)}
+
+        /* MODAL */
+        .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);display:none;align-items:center;justify-content:center;z-index:100}
+        .modal-overlay.show{display:flex}
+        .modal{background:var(--bg2);border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:32px;width:100%;max-width:500px;max-height:80vh;overflow-y:auto}
+        .modal h3{margin-bottom:20px}
+
+        /* TOAST */
+        .toast{position:fixed;bottom:24px;right:24px;background:var(--green);color:#fff;padding:12px 20px;border-radius:10px;font-size:14px;font-weight:500;display:none;z-index:200;animation:slideIn 0.3s}
+        @keyframes slideIn{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+        /* RESPONSIVE */
+        @media(max-width:768px){
+            .sidebar{display:none}
+            .main{margin-left:0}
+            .form-row{grid-template-columns:1fr}
+            .stats-grid{grid-template-columns:1fr 1fr}
+        }
+    </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+    <div class="logo">VintedSniper</div>
+    <div class="nav-item active" onclick="showSection('overview')"><span class="icon">📊</span> Vue d'ensemble</div>
+    <div class="nav-item" onclick="showSection('searches')"><span class="icon">🔍</span> Recherches</div>
+    <div class="nav-item" onclick="showSection('items')"><span class="icon">📦</span> Articles trouves</div>
+    <div class="nav-item" onclick="showSection('settings')"><span class="icon">⚙️</span> Parametres</div>
+    <div class="sidebar-bottom">
+        <div style="font-size:13px;color:var(--text2);padding:0 8px">
+            <span id="userNameDisplay">...</span><br>
+            <span class="plan-badge" id="planBadge">Free</span>
+        </div>
+        <div class="nav-item" onclick="upgradePlan()" style="margin-top:12px;color:var(--accent)"><span class="icon">⭐</span> Upgrade</div>
+        <div class="nav-item" onclick="logout()"><span class="icon">🚪</span> Deconnexion</div>
+    </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+    <!-- OVERVIEW -->
+    <div id="section-overview">
+        <div class="page-title">Vue d'ensemble</div>
+        <div class="stats-grid">
+            <div class="stat-card"><div class="label">Articles trouves</div><div class="value accent" id="statItems">-</div></div>
+            <div class="stat-card"><div class="label">Recherches actives</div><div class="value green" id="statSearches">-</div></div>
+            <div class="stat-card"><div class="label">Notifications envoyees</div><div class="value" id="statNotifs">-</div></div>
+            <div class="stat-card"><div class="label">Articles aujourd'hui</div><div class="value accent" id="statToday">-</div></div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3>Derniers articles trouves</h3>
+                <button class="btn btn-sm btn-outline" onclick="showSection('items')">Voir tout</button>
+            </div>
+            <div id="recentItems">Chargement...</div>
+        </div>
+    </div>
+
+    <!-- SEARCHES -->
+    <div id="section-searches" style="display:none">
+        <div class="page-title">Mes recherches</div>
+        <div class="card">
+            <div class="card-header">
+                <h3>Recherches actives</h3>
+                <button class="btn btn-primary" onclick="openNewSearch()">+ Nouvelle recherche</button>
+            </div>
+            <div id="searchList">Chargement...</div>
+        </div>
+    </div>
+
+    <!-- ITEMS -->
+    <div id="section-items" style="display:none">
+        <div class="page-title">Articles trouves</div>
+        <div class="card">
+            <div id="itemsFeed">Chargement...</div>
+        </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div id="section-settings" style="display:none">
+        <div class="page-title">Parametres</div>
+        <div class="card">
+            <h3 style="margin-bottom:16px">Notifications Discord</h3>
+            <div class="form-group">
+                <label>URL du Webhook Discord</label>
+                <input type="text" id="discordWebhook" placeholder="https://discord.com/api/webhooks/...">
+            </div>
+            <button class="btn btn-primary" onclick="saveSettings()">Sauvegarder</button>
+        </div>
+        <div class="card">
+            <h3 style="margin-bottom:16px">Cle API</h3>
+            <p style="font-size:13px;color:var(--text2);margin-bottom:12px">Utilise cette cle pour acceder a l'API depuis tes scripts</p>
+            <div style="background:var(--bg);padding:12px;border-radius:8px;font-family:monospace;font-size:13px;word-break:break-all" id="apiKeyDisplay">...</div>
+        </div>
+        <div class="card">
+            <h3 style="margin-bottom:16px">Mon plan</h3>
+            <p style="font-size:14px">Plan actuel: <strong id="currentPlan">...</strong></p>
+            <button class="btn btn-primary" style="margin-top:12px" onclick="upgradePlan()">Changer de plan</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Nouvelle recherche -->
+<div class="modal-overlay" id="searchModal">
+    <div class="modal">
+        <h3>Nouvelle recherche</h3>
+        <form id="newSearchForm">
+            <div class="form-group">
+                <label>Nom de la recherche</label>
+                <input type="text" id="searchName" placeholder="Ex: Nike Air Force pas cher" required>
+            </div>
+            <div class="form-group">
+                <label>Mots-cles</label>
+                <input type="text" id="searchKeywords" placeholder="Ex: nike air force" required>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Prix min (EUR)</label>
+                    <input type="number" id="searchPriceFrom" value="0" min="0">
+                </div>
+                <div class="form-group">
+                    <label>Prix max (EUR)</label>
+                    <input type="number" id="searchPriceTo" value="20" min="0">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Tri</label>
+                <select id="searchOrder">
+                    <option value="newest_first">Plus recents d'abord</option>
+                    <option value="price_low_to_high">Prix croissant</option>
+                    <option value="relevance">Pertinence</option>
+                </select>
+            </div>
+            <div style="display:flex;gap:12px;margin-top:20px">
+                <button type="submit" class="btn btn-primary" style="flex:1">Creer</button>
+                <button type="button" class="btn btn-outline" onclick="closeModal()" style="flex:1">Annuler</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ==========================================
+// STATE
+// ==========================================
+let userData = null;
+
+// ==========================================
+// API
+// ==========================================
+async function api(url, opts = {}) {
+    const resp = await fetch(url, {
+        headers: { 'Content-Type': 'application/json', ...opts.headers },
+        ...opts,
+    });
+    return resp.json();
+}
+
+// ==========================================
+// INIT
+// ==========================================
+async function init() {
+    try {
+        const data = await api('/api/me');
+        if (data.error) { window.location.href = '/login'; return; }
+        userData = data;
+        renderOverview();
+        loadSearches();
+        loadItems();
+        renderSettings();
+        startSSE();
+    } catch(e) {
+        window.location.href = '/login';
+    }
+}
+
+// ==========================================
+// RENDER
+// ==========================================
+function renderOverview() {
+    const s = userData.stats;
+    document.getElementById('statItems').textContent = s.total_items;
+    document.getElementById('statSearches').textContent = s.active_searches;
+    document.getElementById('statNotifs').textContent = s.notifications_sent;
+    document.getElementById('statToday').textContent = s.items_today;
+    document.getElementById('userNameDisplay').textContent = userData.user.username;
+    document.getElementById('planBadge').textContent = userData.user.plan_name;
+}
+
+async function loadSearches() {
+    const data = await api('/api/searches');
+    const container = document.getElementById('searchList');
+
+    if (!data.searches || data.searches.length === 0) {
+        container.innerHTML = '<p style="color:var(--text2);font-size:14px">Aucune recherche. Clique sur "+ Nouvelle recherche" pour commencer.</p>';
+        return;
+    }
+
+    container.innerHTML = data.searches.map(s => `
+        <div class="search-item">
+            <div class="search-info">
+                <div class="name">
+                    <span class="status-dot ${s.is_active ? 'active' : 'paused'}"></span>
+                    ${s.name}
+                </div>
+                <div class="details">${s.keywords} | ${s.price_from}-${s.price_to} EUR | ${s.items_found} articles</div>
+            </div>
+            <div class="search-actions">
+                <button class="btn btn-sm ${s.is_active ? 'btn-outline' : 'btn-success'}" onclick="toggleSearch(${s.id})">
+                    ${s.is_active ? 'Pause' : 'Activer'}
+                </button>
+                <button class="btn btn-sm btn-danger" onclick="deleteSearch(${s.id})">Suppr</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+async function loadItems() {
+    const data = await api('/api/items?limit=30');
+    const items = data.items || [];
+
+    const renderItems = (containerId, list) => {
+        const container = document.getElementById(containerId);
+        if (list.length === 0) {
+            container.innerHTML = '<p style="color:var(--text2);font-size:14px">Aucun article trouve pour le moment. Lance une recherche !</p>';
+            return;
+        }
+        container.innerHTML = list.map(i => `
+            <div class="item-row">
+                ${i.photo_url ? `<img class="item-img" src="${i.photo_url}" alt="">` : '<div class="item-img"></div>'}
+                <div class="item-info">
+                    <div class="title">${i.title}</div>
+                    <div class="meta">${i.brand || ''} ${i.size ? '| ' + i.size : ''} | ${i.seller || ''} | ${i.search_name || ''}</div>
+                </div>
+                <div class="item-price">${parseFloat(i.price).toFixed(2)} EUR</div>
+                <a class="item-link" href="${i.url}" target="_blank">Voir &#8599;</a>
+            </div>
+        `).join('');
+    };
+
+    renderItems('recentItems', items.slice(0, 5));
+    renderItems('itemsFeed', items);
+}
+
+function renderSettings() {
+    document.getElementById('discordWebhook').value = userData.user.discord_webhook || '';
+    document.getElementById('apiKeyDisplay').textContent = userData.user.api_key;
+    document.getElementById('currentPlan').textContent = userData.user.plan_name;
+}
+
+// ==========================================
+// ACTIONS
+// ==========================================
+function showSection(name) {
+    ['overview', 'searches', 'items', 'settings'].forEach(s => {
+        document.getElementById('section-' + s).style.display = s === name ? 'block' : 'none';
+    });
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+}
+
+function openNewSearch() {
+    document.getElementById('searchModal').classList.add('show');
+}
+function closeModal() {
+    document.getElementById('searchModal').classList.remove('show');
+}
+
+document.getElementById('newSearchForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const data = await api('/api/searches', {
+        method: 'POST',
+        body: JSON.stringify({
+            name: document.getElementById('searchName').value,
+            keywords: document.getElementById('searchKeywords').value,
+            price_from: parseFloat(document.getElementById('searchPriceFrom').value),
+            price_to: parseFloat(document.getElementById('searchPriceTo').value),
+            sort_order: document.getElementById('searchOrder').value,
+        })
+    });
+    if (data.success) {
+        closeModal();
+        showToast('Recherche creee !');
+        loadSearches();
+        document.getElementById('newSearchForm').reset();
+    } else {
+        showToast(data.error || 'Erreur', true);
+    }
+});
+
+async function toggleSearch(id) {
+    await api(`/api/searches/${id}/toggle`, { method: 'POST' });
+    loadSearches();
+}
+
+async function deleteSearch(id) {
+    if (!confirm('Supprimer cette recherche ?')) return;
+    await api(`/api/searches/${id}`, { method: 'DELETE' });
+    showToast('Recherche supprimee');
+    loadSearches();
+}
+
+async function saveSettings() {
+    await api('/api/me/settings', {
+        method: 'PUT',
+        body: JSON.stringify({
+            discord_webhook: document.getElementById('discordWebhook').value,
+        })
+    });
+    showToast('Parametres sauvegardes !');
+}
+
+async function logout() {
+    await api('/api/logout', { method: 'POST' });
+    window.location.href = '/';
+}
+
+function upgradePlan() {
+    window.location.href = '/#pricing';
+}
+
+// ==========================================
+// SSE - Notifications temps reel
+// ==========================================
+function startSSE() {
+    try {
+        const es = new EventSource('/api/events');
+        es.onmessage = (e) => {
+            const data = JSON.parse(e.data);
+            if (data.type === 'new_item') {
+                showToast(`Nouvel article: ${data.item.title} - ${data.item.price}EUR`);
+                // Notification navigateur
+                if (Notification.permission === 'granted') {
+                    new Notification('VintedSniper', {
+                        body: `${data.item.title} - ${data.item.price}EUR`,
+                        icon: data.item.photo || '',
+                    });
+                }
+                loadItems();
+                init(); // Refresh stats
+            }
+        };
+    } catch(e) {}
+
+    // Demander la permission pour les notifications navigateur
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+    }
+}
+
+// ==========================================
+// UTILS
+// ==========================================
+function showToast(msg, isError = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.background = isError ? 'var(--red)' : 'var(--green)';
+    t.style.display = 'block';
+    setTimeout(() => t.style.display = 'none', 3000);
+}
+
+// ==========================================
+// START
+// ==========================================
+init();
+
+// Refresh toutes les 30s
+setInterval(() => { loadItems(); }, 30000);
+</script>
+</body>
+</html>
