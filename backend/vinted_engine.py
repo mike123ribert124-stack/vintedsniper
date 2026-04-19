@@ -13,6 +13,14 @@ from config import VINTED_BASE_URL, VINTED_API_URL
 class VintedEngine:
     """Moteur de recherche Vinted haute performance"""
 
+    # Delai entre requetes selon le plan (en secondes)
+    PLAN_DELAYS = {
+        "vip": 0,          # Instantane - aucun delai
+        "pro": 0.1,        # Quasi-instantane
+        "basic": 0.3,      # Leger delai
+        "free": 0.5,       # Delai standard
+    }
+
     def __init__(self, max_workers=5):
         self.max_workers = max_workers
         self._sessions = {}
@@ -71,8 +79,8 @@ class VintedEngine:
 
     def search(self, keywords="", catalog_ids=None, brand_ids=None,
                price_from=None, price_to=None, size_ids=None,
-               order="newest_first", per_page=20):
-        """Recherche standard sur Vinted"""
+               order="newest_first", per_page=20, plan="free"):
+        """Recherche sur Vinted - vitesse adaptee au plan"""
         session_data = self._get_session()
 
         if not self._ensure_cookies(session_data):
@@ -98,7 +106,11 @@ class VintedEngine:
             params["size_ids"] = ",".join(str(i) for i in size_ids)
 
         try:
-            time.sleep(random.uniform(0.3, 0.8))
+            # Delai adapte au plan - VIP = 0 = instantane
+            delay = self.PLAN_DELAYS.get(plan, 0.5)
+            if delay > 0:
+                time.sleep(delay)
+
             url = f"{VINTED_API_URL}/catalog/items"
             resp = session_data["session"].get(url, params=params, timeout=15)
 
@@ -115,20 +127,31 @@ class VintedEngine:
             print(f"[VintedEngine] Erreur recherche: {e}")
             return []
 
-    def search_batch(self, search_configs):
+    def search_batch(self, search_configs, plan="free"):
         """
         Recherche en batch multi-thread.
         Lance plusieurs recherches en parallele pour un temps de reponse minimal.
+        VIP/Pro = plus de threads paralleles pour une vitesse maximale.
 
         Args:
             search_configs: Liste de dicts avec les params de chaque recherche
+            plan: Plan de l'utilisateur (adapte le nombre de workers)
 
         Returns:
             Dict {search_name: [items]}
         """
         results = {}
 
-        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+        # Plus de workers pour les plans premium = scan plus rapide
+        plan_workers = {
+            "vip": 10,      # 10 threads paralleles
+            "pro": 8,       # 8 threads
+            "basic": 5,     # 5 threads
+            "free": 3,      # 3 threads
+        }
+        workers = plan_workers.get(plan, self.max_workers)
+
+        with ThreadPoolExecutor(max_workers=workers) as executor:
             future_to_name = {}
 
             for config in search_configs:
@@ -145,6 +168,7 @@ class VintedEngine:
                     size_ids=config.get("size_ids"),
                     order=config.get("sort_order", "newest_first"),
                     per_page=config.get("per_page", 20),
+                    plan=plan,
                 )
                 future_to_name[future] = config.get("name", "Recherche")
 

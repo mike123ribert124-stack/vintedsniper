@@ -624,9 +624,20 @@ def api_admin_make_admin():
 # ============================================
 # SCANNER EN ARRIERE-PLAN
 # ============================================
+# Suivi du dernier scan par utilisateur
+last_scan_time = {}  # {user_id: timestamp}
+
+
 def run_scanner():
-    """Boucle de scan en arriere-plan pour tous les utilisateurs"""
-    print(f"[Scanner] Demarre")
+    """
+    Boucle de scan en arriere-plan pour tous les utilisateurs.
+    Respecte l'intervalle de scan de chaque plan :
+    - VIP : scan continu (quasi-instantane)
+    - Pro : toutes les 10 secondes
+    - Basic : toutes les 30 secondes
+    - Free : toutes les 2 minutes
+    """
+    print(f"[Scanner] Demarre - Mode adaptatif par plan")
 
     while True:
         try:
@@ -636,7 +647,16 @@ def run_scanner():
 
             for user in users:
                 user = dict(user)
-                plan = PLANS.get(user["plan"], PLANS["free"])
+                user_plan = user.get("plan", "free")
+                plan = PLANS.get(user_plan, PLANS["free"])
+                scan_interval = plan.get("scan_interval", 120)
+
+                # Verifier si c'est le moment de scanner cet utilisateur
+                now = time.time()
+                last_scan = last_scan_time.get(user["id"], 0)
+                if (now - last_scan) < scan_interval:
+                    continue  # Pas encore le moment pour cet utilisateur
+
                 searches = get_user_searches(user["id"])
                 active_searches = [s for s in searches if s.get("is_active")]
 
@@ -659,8 +679,11 @@ def run_scanner():
                         "_search_id": s["id"],
                     })
 
-                # Recherche batch multi-thread
-                results = vinted.search_batch(search_configs)
+                # Recherche batch multi-thread (vitesse adaptee au plan)
+                results = vinted.search_batch(search_configs, plan=user_plan)
+
+                # Marquer le scan comme effectue
+                last_scan_time[user["id"]] = time.time()
 
                 # Traiter les resultats
                 for config in search_configs:
@@ -673,12 +696,13 @@ def run_scanner():
                             # Notification multi-canal
                             notification_manager.notify_user(user, item, name)
 
-            # Attendre avant le prochain cycle
-            time.sleep(10)
+            # Boucle rapide pour ne pas rater les VIP
+            # On verifie toutes les 2 secondes s'il y a des utilisateurs a scanner
+            time.sleep(2)
 
         except Exception as e:
             print(f"[Scanner] Erreur: {e}")
-            time.sleep(30)
+            time.sleep(5)
 
 
 # ============================================
