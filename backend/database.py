@@ -161,7 +161,8 @@ def create_user(email, username, password):
 def verify_user(email, password):
     """Verifie les identifiants d'un utilisateur"""
     conn = get_db()
-    user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+    # Recherche insensible a la casse
+    user = conn.execute("SELECT * FROM users WHERE LOWER(email) = LOWER(?)", (email,)).fetchone()
     conn.close()
 
     if not user:
@@ -249,7 +250,8 @@ def get_user_stats(user_id):
 def create_reset_token(email):
     """Cree un token de reinitialisation pour un email"""
     conn = get_db()
-    user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+    # Recherche insensible a la casse
+    user = conn.execute("SELECT * FROM users WHERE LOWER(email) = LOWER(?)", (email,)).fetchone()
     if not user:
         conn.close()
         return None

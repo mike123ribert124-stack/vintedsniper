@@ -243,21 +243,26 @@ def api_forgot_password():
 
     result = create_reset_token(email)
 
-    # On repond toujours succes (securite : ne pas reveler si l'email existe)
     if result:
-        # Envoyer l'email avec le lien
         reset_url = f"{request.host_url}reset-password?token={result['token']}"
+
+        # Essayer d'envoyer l'email
+        email_sent = False
         try:
             notification_manager.send_reset_email(email, result["username"], reset_url)
+            email_sent = True
         except Exception as e:
             print(f"[Reset] Erreur envoi email: {e}")
-            # Meme si l'email echoue, on donne le lien dans la reponse (mode dev)
-            return jsonify({
-                "success": True,
-                "message": "Si cet email existe, un lien de reinitialisation a ete envoye.",
-                "debug_url": reset_url  # A retirer en production
-            })
 
+        # Toujours renvoyer le lien direct (tant que le SMTP n'est pas configure)
+        return jsonify({
+            "success": True,
+            "message": "Un lien de reinitialisation a ete genere.",
+            "email_sent": email_sent,
+            "reset_url": reset_url
+        })
+
+    # Email pas trouve - on repond quand meme succes (securite)
     return jsonify({
         "success": True,
         "message": "Si cet email existe, un lien de reinitialisation a ete envoye."
