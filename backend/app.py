@@ -20,7 +20,10 @@ from flask_cors import CORS
 from config import APP_NAME, SECRET_KEY, PLANS
 from database import (init_db, create_user, verify_user, get_user_by_api_key,
                        get_user_searches, create_search, save_found_item,
-                       get_user_stats, get_db)
+                       get_user_stats, get_db, ensure_admin_columns, make_admin,
+                       get_admin_overview, get_all_users, admin_update_user,
+                       admin_toggle_user, get_all_searches, get_all_items,
+                       get_system_logs)
 from vinted_engine import VintedEngine
 from notifications import notification_manager
 from payments import payment_manager
@@ -36,7 +39,11 @@ CORS(app)
 
 # Init
 init_db()
+ensure_admin_columns()
 vinted = VintedEngine(max_workers=5)
+
+# Email admin configurable (premier admin)
+ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "mike123.ribert124@gmail.com")
 
 # Scanner en arriere-plan
 scanner_threads = {}
@@ -360,6 +367,135 @@ def api_checkout():
         return jsonify({"url": checkout_url})
     else:
         return jsonify({"error": "Erreur de paiement"}), 500
+
+
+# ============================================
+# ADMIN MIDDLEWARE
+# ============================================
+def admin_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        # Check session
+        user_id = session.get("user_id")
+        if not user_id:
+            return jsonify({"error": "Non authentifie"}), 401
+
+        db = get_db()
+        user = db.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+        db.close()
+
+        if not user:
+            return jsonify({"error": "Utilisateur introuvable"}), 401
+
+        user = dict(user)
+        # Admin si is_admin=1 OU si email = ADMIN_EMAIL
+        if not user.get("is_admin") and user["email"] != ADMIN_EMAIL:
+            return jsonify({"error": "Acces refuse - Admin uniquement"}), 403
+
+        # Auto-promote si email admin mais pas encore flag
+        if user["email"] == ADMIN_EMAIL and not user.get("is_admin"):
+            make_admin(user["email"])
+
+        request.user = user
+        return f(*args, **kwargs)
+    return decorated
+
+
+# ============================================
+# ADMIN PAGES
+# ============================================
+@app.route("/admin")
+def admin_page():
+    if not session.get("user_id"):
+        return redirect("/login")
+    # Verifier admin
+    db = get_db()
+    user = db.execute("SELECT * FROM users WHERE id = ?", (session["user_id"],)).fetchone()
+    db.close()
+    if not user:
+        return redirect("/login")
+    user = dict(user)
+    if not user.get("is_admin") and user["email"] != ADMIN_EMAIL:
+        return redirect("/dashboard")
+    return render_template("admin.html")
+
+
+# ============================================
+# API ADMIN
+# ============================================
+@app.route("/api/admin/overview")
+@admin_required
+def api_admin_overview():
+    stats = get_admin_overview()
+    return jsonify(stats)
+
+
+@app.route("/api/admin/users")
+@admin_required
+def api_admin_users():
+    search_query = request.args.get("search", "")
+    plan_filter = request.args.get("plan", "all")
+    status_filter = request.args.get("status", "all")
+    limit = request.args.get("limit", 100, type=int)
+    offset = request.args.get("offset", 0, type=int)
+
+    result = get_all_users(search_query, plan_filter, status_filter, limit, offset)
+    return jsonify(result)
+
+
+@app.route("/api/admin/users/<int:user_id>", methods=["PUT"])
+@admin_required
+def api_admin_update_user(user_id):
+    data = request.json or {}
+    admin_update_user(user_id, data)
+    return jsonify({"success": True})
+
+
+@app.route("/api/admin/users/<int:user_id>/toggle", methods=["POST"])
+@admin_required
+def api_admin_toggle_user(user_id):
+    result = admin_toggle_user(user_id)
+    if result:
+        return jsonify({"success": True, "is_active": result["is_active"]})
+    return jsonify({"error": "Utilisateur introuvable"}), 404
+
+
+@app.route("/api/admin/searches")
+@admin_required
+def api_admin_searches():
+    limit = request.args.get("limit", 100, type=int)
+    offset = request.args.get("offset", 0, type=int)
+    result = get_all_searches(limit, offset)
+    return jsonify(result)
+
+
+@app.route("/api/admin/items")
+@admin_required
+def api_admin_items():
+    limit = request.args.get("limit", 100, type=int)
+    offset = request.args.get("offset", 0, type=int)
+    result = get_all_items(limit, offset)
+    return jsonify(result)
+
+
+@app.route("/api/admin/logs")
+@admin_required
+def api_admin_logs():
+    limit = request.args.get("limit", 100, type=int)
+    offset = request.args.get("offset", 0, type=int)
+    result = get_system_logs(limit, offset)
+    return jsonify(result)
+
+
+@app.route("/api/admin/make-admin", methods=["POST"])
+@admin_required
+def api_admin_make_admin():
+    data = request.json or {}
+    email = data.get("email", "")
+    if not email:
+        return jsonify({"error": "Email requis"}), 400
+    make_admin(email)
+    return jsonify({"success": True})
 
 
 # ============================================

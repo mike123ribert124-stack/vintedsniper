@@ -232,4 +232,171 @@ def get_user_stats(user_id):
     return stats
 
 
+# ============================================
+# ADMIN FUNCTIONS
+# ============================================
+def ensure_admin_columns():
+    """Ajoute la colonne is_admin si elle n'existe pas"""
+    conn = get_db()
+    try:
+        conn.execute("ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0")
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass  # Colonne existe deja
+    conn.close()
+
+
+def make_admin(email):
+    """Donne les droits admin a un utilisateur par email"""
+    conn = get_db()
+    conn.execute("UPDATE users SET is_admin = 1 WHERE email = ?", (email,))
+    conn.commit()
+    conn.close()
+
+
+def get_admin_overview():
+    """Stats globales pour le dashboard admin"""
+    conn = get_db()
+    stats = {
+        "total_users": conn.execute("SELECT COUNT(*) FROM users").fetchone()[0],
+        "active_users": conn.execute("SELECT COUNT(*) FROM users WHERE is_active = 1").fetchone()[0],
+        "total_searches": conn.execute("SELECT COUNT(*) FROM searches").fetchone()[0],
+        "active_searches": conn.execute("SELECT COUNT(*) FROM searches WHERE is_active = 1").fetchone()[0],
+        "total_items": conn.execute("SELECT COUNT(*) FROM found_items").fetchone()[0],
+        "items_today": conn.execute(
+            "SELECT COUNT(*) FROM found_items WHERE found_at > strftime('%s','now','-1 day')"
+        ).fetchone()[0],
+        "total_notifications": conn.execute("SELECT COUNT(*) FROM notifications_log").fetchone()[0],
+        "total_payments": conn.execute("SELECT COUNT(*) FROM payments").fetchone()[0],
+        "revenue_total": conn.execute(
+            "SELECT COALESCE(SUM(amount), 0) FROM payments WHERE status = 'completed'"
+        ).fetchone()[0],
+        "plans_breakdown": {},
+    }
+    # Breakdown par plan
+    rows = conn.execute("SELECT plan, COUNT(*) as cnt FROM users GROUP BY plan").fetchall()
+    for r in rows:
+        stats["plans_breakdown"][r["plan"]] = r["cnt"]
+
+    conn.close()
+    return stats
+
+
+def get_all_users(search_query=None, plan_filter=None, status_filter=None, limit=100, offset=0):
+    """Liste tous les utilisateurs pour l'admin"""
+    conn = get_db()
+    query = "SELECT id, email, username, plan, is_active, created_at, last_login, stripe_customer_id, discord_webhook, api_key FROM users WHERE 1=1"
+    params = []
+
+    if search_query:
+        query += " AND (email LIKE ? OR username LIKE ?)"
+        params.extend([f"%{search_query}%", f"%{search_query}%"])
+    if plan_filter and plan_filter != "all":
+        query += " AND plan = ?"
+        params.append(plan_filter)
+    if status_filter == "active":
+        query += " AND is_active = 1"
+    elif status_filter == "blocked":
+        query += " AND is_active = 0"
+
+    query += " ORDER BY created_at DESC LIMIT ? OFFSET ?"
+    params.extend([limit, offset])
+
+    users = conn.execute(query, params).fetchall()
+    total = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
+    conn.close()
+
+    result = []
+    for u in users:
+        u = dict(u)
+        # Ajouter les stats de chaque user
+        conn2 = get_db()
+        u["searches_count"] = conn2.execute("SELECT COUNT(*) FROM searches WHERE user_id = ?", (u["id"],)).fetchone()[0]
+        u["items_count"] = conn2.execute("SELECT COUNT(*) FROM found_items WHERE user_id = ?", (u["id"],)).fetchone()[0]
+        conn2.close()
+        result.append(u)
+
+    return {"users": result, "total": total}
+
+
+def admin_update_user(user_id, data):
+    """Met a jour un utilisateur depuis l'admin"""
+    conn = get_db()
+    updates = []
+    params = []
+
+    if "plan" in data:
+        updates.append("plan = ?")
+        params.append(data["plan"])
+    if "is_active" in data:
+        updates.append("is_active = ?")
+        params.append(1 if data["is_active"] else 0)
+    if "email" in data:
+        updates.append("email = ?")
+        params.append(data["email"])
+    if "username" in data:
+        updates.append("username = ?")
+        params.append(data["username"])
+
+    if updates:
+        params.append(user_id)
+        conn.execute(f"UPDATE users SET {', '.join(updates)} WHERE id = ?", params)
+        conn.commit()
+    conn.close()
+    return True
+
+
+def admin_toggle_user(user_id):
+    """Active/desactive un utilisateur"""
+    conn = get_db()
+    conn.execute("UPDATE users SET is_active = CASE WHEN is_active = 1 THEN 0 ELSE 1 END WHERE id = ?", (user_id,))
+    conn.commit()
+    user = conn.execute("SELECT is_active FROM users WHERE id = ?", (user_id,)).fetchone()
+    conn.close()
+    return dict(user) if user else None
+
+
+def get_all_searches(limit=100, offset=0):
+    """Toutes les recherches pour l'admin"""
+    conn = get_db()
+    searches = conn.execute(
+        """SELECT s.*, u.username, u.email FROM searches s
+           JOIN users u ON s.user_id = u.id
+           ORDER BY s.created_at DESC LIMIT ? OFFSET ?""",
+        (limit, offset)
+    ).fetchall()
+    total = conn.execute("SELECT COUNT(*) FROM searches").fetchone()[0]
+    conn.close()
+    return {"searches": [dict(s) for s in searches], "total": total}
+
+
+def get_all_items(limit=100, offset=0):
+    """Tous les articles trouves pour l'admin"""
+    conn = get_db()
+    items = conn.execute(
+        """SELECT fi.*, u.username, s.name as search_name FROM found_items fi
+           JOIN users u ON fi.user_id = u.id
+           JOIN searches s ON fi.search_id = s.id
+           ORDER BY fi.found_at DESC LIMIT ? OFFSET ?""",
+        (limit, offset)
+    ).fetchall()
+    total = conn.execute("SELECT COUNT(*) FROM found_items").fetchone()[0]
+    conn.close()
+    return {"items": [dict(i) for i in items], "total": total}
+
+
+def get_system_logs(limit=100, offset=0):
+    """Logs du systeme (notifications)"""
+    conn = get_db()
+    logs = conn.execute(
+        """SELECT nl.*, u.username FROM notifications_log nl
+           JOIN users u ON nl.user_id = u.id
+           ORDER BY nl.sent_at DESC LIMIT ? OFFSET ?""",
+        (limit, offset)
+    ).fetchall()
+    total = conn.execute("SELECT COUNT(*) FROM notifications_log").fetchone()[0]
+    conn.close()
+    return {"logs": [dict(l) for l in logs], "total": total}
+
+
 # Note: appeler init_db() au demarrage de l'app
