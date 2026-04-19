@@ -208,5 +208,50 @@ class NotificationManager:
         return results
 
 
+    # ==========================================
+    # EMAIL REINITIALISATION MOT DE PASSE
+    # ==========================================
+    def send_reset_email(self, to_email, username, reset_url):
+        """Envoie un email de reinitialisation de mot de passe"""
+        if not SMTP_USER or not to_email:
+            raise Exception("SMTP non configure")
+
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = f"[{APP_NAME}] Reinitialisation de ton mot de passe"
+        msg["From"] = f"{APP_NAME} <{SMTP_USER}>"
+        msg["To"] = to_email
+
+        html = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; background: #1a1a2e; color: #fff; padding: 20px;">
+            <div style="max-width: 500px; margin: 0 auto; background: #16213e; border-radius: 12px; padding: 30px;">
+                <h2 style="color: #00d4ff; text-align: center;">{APP_NAME}</h2>
+                <h3 style="text-align: center;">Reinitialisation du mot de passe</h3>
+                <p>Salut <strong>{username}</strong>,</p>
+                <p>Tu as demande a reinitialiser ton mot de passe. Clique sur le bouton ci-dessous :</p>
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="{reset_url}" style="display:inline-block; background:linear-gradient(135deg,#00d4ff,#7c3aed); color:#fff; padding:14px 32px; border-radius:10px; text-decoration:none; font-weight:bold; font-size:16px;">
+                        Changer mon mot de passe
+                    </a>
+                </div>
+                <p style="font-size:13px; color:#888;">Ce lien expire dans 1 heure.</p>
+                <p style="font-size:13px; color:#888;">Si tu n'as pas fait cette demande, ignore cet email.</p>
+                <hr style="border-color: #333; margin-top: 20px;">
+                <p style="font-size:12px; color:#666; text-align:center;">{APP_NAME} - Ne reponds pas a cet email</p>
+            </div>
+        </body>
+        </html>
+        """
+
+        msg.attach(MIMEText(html, "html"))
+
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
+            server.starttls()
+            server.login(SMTP_USER, SMTP_PASSWORD)
+            server.sendmail(SMTP_USER, to_email, msg.as_string())
+
+        return True
+
+
 # Singleton
 notification_manager = NotificationManager()

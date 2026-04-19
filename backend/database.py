@@ -105,6 +105,17 @@ def init_db():
             FOREIGN KEY (user_id) REFERENCES users(id)
         );
 
+        CREATE TABLE IF NOT EXISTS password_resets (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            token TEXT UNIQUE NOT NULL,
+            expires_at REAL NOT NULL,
+            used INTEGER DEFAULT 0,
+            created_at REAL DEFAULT (strftime('%s','now')),
+            FOREIGN KEY (user_id) REFERENCES users(id)
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_password_resets_token ON password_resets(token);
         CREATE INDEX IF NOT EXISTS idx_found_items_user ON found_items(user_id);
         CREATE INDEX IF NOT EXISTS idx_found_items_vinted ON found_items(vinted_id);
         CREATE INDEX IF NOT EXISTS idx_searches_user ON searches(user_id);
@@ -230,6 +241,64 @@ def get_user_stats(user_id):
     }
     conn.close()
     return stats
+
+
+# ============================================
+# MOT DE PASSE OUBLIE
+# ============================================
+def create_reset_token(email):
+    """Cree un token de reinitialisation pour un email"""
+    conn = get_db()
+    user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+    if not user:
+        conn.close()
+        return None
+
+    token = secrets.token_urlsafe(48)
+    expires_at = time.time() + 3600  # Expire dans 1 heure
+
+    # Invalider les anciens tokens
+    conn.execute("UPDATE password_resets SET used = 1 WHERE user_id = ?", (user["id"],))
+    # Creer le nouveau
+    conn.execute(
+        "INSERT INTO password_resets (user_id, token, expires_at) VALUES (?, ?, ?)",
+        (user["id"], token, expires_at)
+    )
+    conn.commit()
+    conn.close()
+    return {"token": token, "user_id": user["id"], "username": user["username"], "email": email}
+
+
+def verify_reset_token(token):
+    """Verifie si un token de reinitialisation est valide"""
+    conn = get_db()
+    reset = conn.execute(
+        "SELECT * FROM password_resets WHERE token = ? AND used = 0 AND expires_at > ?",
+        (token, time.time())
+    ).fetchone()
+    conn.close()
+    return dict(reset) if reset else None
+
+
+def reset_password(token, new_password):
+    """Reinitialise le mot de passe avec un token valide"""
+    conn = get_db()
+    reset = conn.execute(
+        "SELECT * FROM password_resets WHERE token = ? AND used = 0 AND expires_at > ?",
+        (token, time.time())
+    ).fetchone()
+
+    if not reset:
+        conn.close()
+        return False
+
+    password_hash, salt = hash_password(new_password)
+    conn.execute("UPDATE users SET password_hash = ?, salt = ? WHERE id = ?",
+                 (password_hash, salt, reset["user_id"]))
+    conn.execute("UPDATE password_resets SET used = 1 WHERE id = ?", (reset["id"],))
+    conn.commit()
+    conn.close()
+    return True
 
 
 # ============================================

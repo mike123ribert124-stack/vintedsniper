@@ -23,7 +23,8 @@ from database import (init_db, create_user, verify_user, get_user_by_api_key,
                        get_user_stats, get_db, ensure_admin_columns, make_admin,
                        get_admin_overview, get_all_users, admin_update_user,
                        admin_toggle_user, get_all_searches, get_all_items,
-                       get_system_logs)
+                       get_system_logs, create_reset_token, verify_reset_token,
+                       reset_password)
 from vinted_engine import VintedEngine
 from notifications import notification_manager
 from payments import payment_manager
@@ -102,6 +103,19 @@ def register_page():
     return render_template("register.html")
 
 
+@app.route("/forgot-password")
+def forgot_password_page():
+    return render_template("forgot_password.html")
+
+
+@app.route("/reset-password")
+def reset_password_page():
+    token = request.args.get("token", "")
+    if not token:
+        return redirect("/forgot-password")
+    return render_template("reset_password.html", token=token)
+
+
 # ============================================
 # API AUTH
 # ============================================
@@ -157,6 +171,58 @@ def api_login():
 def api_logout():
     session.clear()
     return jsonify({"success": True})
+
+
+# ============================================
+# API MOT DE PASSE OUBLIE
+# ============================================
+@app.route("/api/forgot-password", methods=["POST"])
+def api_forgot_password():
+    data = request.json or {}
+    email = data.get("email", "").strip()
+
+    if not email:
+        return jsonify({"error": "Email requis"}), 400
+
+    result = create_reset_token(email)
+
+    # On repond toujours succes (securite : ne pas reveler si l'email existe)
+    if result:
+        # Envoyer l'email avec le lien
+        reset_url = f"{request.host_url}reset-password?token={result['token']}"
+        try:
+            notification_manager.send_reset_email(email, result["username"], reset_url)
+        except Exception as e:
+            print(f"[Reset] Erreur envoi email: {e}")
+            # Meme si l'email echoue, on donne le lien dans la reponse (mode dev)
+            return jsonify({
+                "success": True,
+                "message": "Si cet email existe, un lien de reinitialisation a ete envoye.",
+                "debug_url": reset_url  # A retirer en production
+            })
+
+    return jsonify({
+        "success": True,
+        "message": "Si cet email existe, un lien de reinitialisation a ete envoye."
+    })
+
+
+@app.route("/api/reset-password", methods=["POST"])
+def api_reset_password():
+    data = request.json or {}
+    token = data.get("token", "")
+    new_password = data.get("password", "")
+
+    if not token or not new_password:
+        return jsonify({"error": "Token et mot de passe requis"}), 400
+    if len(new_password) < 6:
+        return jsonify({"error": "Le mot de passe doit faire au moins 6 caracteres"}), 400
+
+    success = reset_password(token, new_password)
+    if success:
+        return jsonify({"success": True, "message": "Mot de passe modifie avec succes !"})
+    else:
+        return jsonify({"error": "Lien expire ou invalide. Demande un nouveau lien."}), 400
 
 
 # ============================================
