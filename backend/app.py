@@ -36,7 +36,44 @@ app = Flask(__name__,
             template_folder="../frontend",
             static_folder="../static")
 app.secret_key = SECRET_KEY
+app.config['SESSION_COOKIE_HTTPONLY'] = True      # Empeche le vol de cookie via JavaScript
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'     # Protection CSRF basique
+app.config['PERMANENT_SESSION_LIFETIME'] = 86400   # Session expire apres 24h
 CORS(app)
+
+# ============================================
+# PROTECTION ANTI-BRUTE-FORCE
+# ============================================
+login_attempts = {}  # {ip: {"count": int, "last_attempt": float}}
+MAX_LOGIN_ATTEMPTS = 5
+LOCKOUT_TIME = 300  # 5 minutes de blocage
+
+
+def check_rate_limit(ip):
+    """Verifie si l'IP est bloquee apres trop de tentatives"""
+    if ip not in login_attempts:
+        return True
+    info = login_attempts[ip]
+    if time.time() - info["last_attempt"] > LOCKOUT_TIME:
+        del login_attempts[ip]
+        return True
+    if info["count"] >= MAX_LOGIN_ATTEMPTS:
+        return False
+    return True
+
+
+def record_failed_attempt(ip):
+    """Enregistre une tentative echouee"""
+    if ip not in login_attempts:
+        login_attempts[ip] = {"count": 0, "last_attempt": 0}
+    login_attempts[ip]["count"] += 1
+    login_attempts[ip]["last_attempt"] = time.time()
+
+
+def reset_attempts(ip):
+    """Remet le compteur a zero apres connexion reussie"""
+    if ip in login_attempts:
+        del login_attempts[ip]
 
 # Init
 init_db()
@@ -121,8 +158,12 @@ def reset_password_page():
 # ============================================
 @app.route("/api/register", methods=["POST"])
 def api_register():
+    # Protection anti-spam
+    if not check_rate_limit(request.remote_addr):
+        return jsonify({"error": "Trop de tentatives. Reessaye dans 5 minutes."}), 429
+
     data = request.json or {}
-    email = data.get("email", "").strip()
+    email = data.get("email", "").strip().lower()
     username = data.get("username", "").strip()
     password = data.get("password", "")
 
@@ -130,10 +171,15 @@ def api_register():
         return jsonify({"error": "Tous les champs sont requis"}), 400
     if len(password) < 6:
         return jsonify({"error": "Le mot de passe doit faire au moins 6 caracteres"}), 400
+    if len(username) < 3 or len(username) > 30:
+        return jsonify({"error": "Le nom d'utilisateur doit faire entre 3 et 30 caracteres"}), 400
+    if "@" not in email or "." not in email:
+        return jsonify({"error": "Email invalide"}), 400
 
     try:
         user = create_user(email, username, password)
         session["user_id"] = user["id"]
+        session.permanent = True
         return jsonify({"success": True, "user": user})
     except ValueError as e:
         return jsonify({"error": str(e)}), 409
@@ -141,15 +187,22 @@ def api_register():
 
 @app.route("/api/login", methods=["POST"])
 def api_login():
+    # Protection anti-brute-force
+    if not check_rate_limit(request.remote_addr):
+        return jsonify({"error": "Trop de tentatives. Reessaye dans 5 minutes."}), 429
+
     data = request.json or {}
-    email = data.get("email", "").strip()
+    email = data.get("email", "").strip().lower()
     password = data.get("password", "")
 
     user = verify_user(email, password)
     if not user:
+        record_failed_attempt(request.remote_addr)
         return jsonify({"error": "Email ou mot de passe incorrect"}), 401
 
+    reset_attempts(request.remote_addr)
     session["user_id"] = user["id"]
+    session.permanent = True
     db = get_db()
     db.execute("UPDATE users SET last_login = strftime('%s','now') WHERE id = ?", (user["id"],))
     db.commit()
@@ -178,8 +231,12 @@ def api_logout():
 # ============================================
 @app.route("/api/forgot-password", methods=["POST"])
 def api_forgot_password():
+    # Protection anti-spam
+    if not check_rate_limit(request.remote_addr):
+        return jsonify({"error": "Trop de tentatives. Reessaye dans 5 minutes."}), 429
+
     data = request.json or {}
-    email = data.get("email", "").strip()
+    email = data.get("email", "").strip().lower()
 
     if not email:
         return jsonify({"error": "Email requis"}), 400

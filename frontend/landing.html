@@ -204,12 +204,12 @@
     <div class="pricing-grid">
         <!-- STARTER -->
         <div class="price-card">
-            <h3>Starter</h3>
-            <div class="plan-desc">Pour decouvrir</div>
-            <div class="price-amount">0 EUR<span>/mois</span></div>
+            <h3>{{ plans.free.name }}</h3>
+            <div class="plan-desc">{{ plans.free.description }}</div>
+            <div class="price-amount">{{ plans.free.price_monthly|int }} EUR<span>/mois</span></div>
             <ul class="price-features">
-                <li>2 recherches actives</li>
-                <li>Scan toutes les 2 min</li>
+                <li>{{ plans.free.max_searches }} recherches actives</li>
+                <li>Scan toutes les {{ (plans.free.scan_interval / 60)|int }} min</li>
                 <li>Alertes Discord</li>
                 <li class="disabled">Alertes Email</li>
                 <li class="disabled">Achat automatique</li>
@@ -220,50 +220,50 @@
 
         <!-- BASIC -->
         <div class="price-card">
-            <h3>Basic</h3>
-            <div class="plan-desc">Pour les revendeurs serieux</div>
-            <div class="price-amount">15 EUR<span>/mois</span></div>
+            <h3>{{ plans.basic.name }}</h3>
+            <div class="plan-desc">{{ plans.basic.description }}</div>
+            <div class="price-amount">{{ plans.basic.price_monthly|int }} EUR<span>/mois</span></div>
             <ul class="price-features">
-                <li>10 recherches actives</li>
-                <li>Scan toutes les 30s</li>
+                <li>{{ plans.basic.max_searches }} recherches actives</li>
+                <li>Scan toutes les {{ plans.basic.scan_interval }}s</li>
                 <li>Alertes Discord</li>
                 <li>Alertes Email</li>
                 <li class="disabled">Achat automatique</li>
                 <li class="disabled">Alertes SMS</li>
             </ul>
-            <a href="/register?plan=basic" class="btn btn-primary">Choisir Basic</a>
+            <a href="/register?plan=basic" class="btn btn-primary">Choisir {{ plans.basic.name }}</a>
         </div>
 
         <!-- PRO -->
         <div class="price-card popular">
-            <h3>Pro</h3>
-            <div class="plan-desc">Pour les pros du resell</div>
-            <div class="price-amount">50 EUR<span>/mois</span></div>
+            <h3>{{ plans.pro.name }}</h3>
+            <div class="plan-desc">{{ plans.pro.description }}</div>
+            <div class="price-amount">{{ plans.pro.price_monthly|int }} EUR<span>/mois</span></div>
             <ul class="price-features">
-                <li>30 recherches actives</li>
-                <li>Scan toutes les 10s</li>
+                <li>{{ plans.pro.max_searches }} recherches actives</li>
+                <li>Scan toutes les {{ plans.pro.scan_interval }}s</li>
                 <li>Alertes Discord + Email</li>
                 <li>Notifications navigateur</li>
                 <li>Achat automatique</li>
                 <li class="disabled">Alertes SMS</li>
             </ul>
-            <a href="/register?plan=pro" class="btn btn-primary">Choisir Pro</a>
+            <a href="/register?plan=pro" class="btn btn-primary">Choisir {{ plans.pro.name }}</a>
         </div>
 
         <!-- VIP -->
         <div class="price-card">
-            <h3>VIP</h3>
-            <div class="plan-desc">Puissance maximale</div>
-            <div class="price-amount">90 EUR<span>/mois</span></div>
+            <h3>{{ plans.vip.name }}</h3>
+            <div class="plan-desc">{{ plans.vip.description }}</div>
+            <div class="price-amount">{{ plans.vip.price_monthly|int }} EUR<span>/mois</span></div>
             <ul class="price-features">
-                <li>100 recherches actives</li>
-                <li>Scan toutes les 5s</li>
+                <li>{{ plans.vip.max_searches }} recherches actives</li>
+                <li>Scan toutes les {{ plans.vip.scan_interval }}s</li>
                 <li>Tous les canaux</li>
                 <li>Alertes SMS</li>
                 <li>Achat automatique</li>
                 <li>Support prioritaire</li>
             </ul>
-            <a href="/register?plan=vip" class="btn btn-primary">Choisir VIP</a>
+            <a href="/register?plan=vip" class="btn btn-primary">Choisir {{ plans.vip.name }}</a>
         </div>
     </div>
 </section>
