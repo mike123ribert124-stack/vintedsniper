@@ -97,6 +97,23 @@ class PaymentManager:
             print(f"[Stripe] Erreur webhook: {e}")
             return None
 
+    def get_subscription(self, subscription_id):
+        """Recupere un abonnement Stripe par son ID."""
+        if not stripe:
+            return None
+        try:
+            return stripe.Subscription.retrieve(subscription_id)
+        except Exception as e:
+            print(f"[Stripe] Erreur lecture abonnement: {e}")
+            return None
+
+    def get_plan_key_by_price_id(self, price_id):
+        """Trouve la cle de plan depuis un Stripe price_id."""
+        for key, plan in PLANS.items():
+            if plan.get("stripe_price_id") == price_id and plan.get("price_monthly", 0) > 0:
+                return key
+        return None
+
     # ==========================================
     # PAYPAL
     # ==========================================

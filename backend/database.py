@@ -101,8 +101,16 @@ def init_db():
             currency TEXT DEFAULT 'EUR',
             status TEXT DEFAULT 'pending',
             provider_id TEXT,
+            event_id TEXT,
             created_at REAL DEFAULT (strftime('%s','now')),
             FOREIGN KEY (user_id) REFERENCES users(id)
+        );
+
+        CREATE TABLE IF NOT EXISTS webhook_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            provider TEXT NOT NULL,
+            event_id TEXT NOT NULL UNIQUE,
+            processed_at REAL DEFAULT (strftime('%s','now'))
         );
 
         CREATE TABLE IF NOT EXISTS password_resets (
@@ -178,6 +186,14 @@ def get_user_by_api_key(api_key):
     """Recupere un utilisateur par sa cle API"""
     conn = get_db()
     user = conn.execute("SELECT * FROM users WHERE api_key = ? AND is_active = 1", (api_key,)).fetchone()
+    conn.close()
+    return dict(user) if user else None
+
+
+def get_user_by_id(user_id):
+    """Recupere un utilisateur par ID"""
+    conn = get_db()
+    user = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
     conn.close()
     return dict(user) if user else None
 
@@ -314,6 +330,20 @@ def ensure_admin_columns():
         conn.commit()
     except sqlite3.OperationalError:
         pass  # Colonne existe deja
+    try:
+        conn.execute("ALTER TABLE payments ADD COLUMN event_id TEXT")
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass  # Colonne existe deja
+    conn.execute(
+        """CREATE TABLE IF NOT EXISTS webhook_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            provider TEXT NOT NULL,
+            event_id TEXT NOT NULL UNIQUE,
+            processed_at REAL DEFAULT (strftime('%s','now'))
+        )"""
+    )
+    conn.commit()
     conn.close()
 
 
@@ -356,7 +386,7 @@ def get_admin_overview():
 def get_all_users(search_query=None, plan_filter=None, status_filter=None, limit=100, offset=0):
     """Liste tous les utilisateurs pour l'admin"""
     conn = get_db()
-    query = "SELECT id, email, username, plan, is_active, created_at, last_login, stripe_customer_id, discord_webhook, api_key FROM users WHERE 1=1"
+    query = "SELECT id, email, username, plan, is_active, created_at, last_login, stripe_customer_id, discord_webhook FROM users WHERE 1=1"
     params = []
 
     if search_query:
@@ -388,6 +418,70 @@ def get_all_users(search_query=None, plan_filter=None, status_filter=None, limit
         result.append(u)
 
     return {"users": result, "total": total}
+
+
+def get_user_by_stripe_customer_id(customer_id):
+    """Recupere un utilisateur a partir de son customer Stripe"""
+    conn = get_db()
+    user = conn.execute(
+        "SELECT * FROM users WHERE stripe_customer_id = ?",
+        (customer_id,)
+    ).fetchone()
+    conn.close()
+    return dict(user) if user else None
+
+
+def update_user_plan_from_subscription(user_id, plan_key, subscription_id):
+    """Met a jour le plan et l'abonnement Stripe de l'utilisateur."""
+    conn = get_db()
+    conn.execute(
+        "UPDATE users SET plan = ?, stripe_subscription_id = ? WHERE id = ?",
+        (plan_key, subscription_id, user_id)
+    )
+    conn.commit()
+    conn.close()
+
+
+def clear_user_subscription(user_id):
+    """Repasse l'utilisateur en free suite a annulation/inactivite."""
+    conn = get_db()
+    conn.execute(
+        "UPDATE users SET plan = 'free', stripe_subscription_id = NULL WHERE id = ?",
+        (user_id,)
+    )
+    conn.commit()
+    conn.close()
+
+
+def save_payment_record(user_id, provider, amount, currency, status, provider_id=None, event_id=None):
+    """Sauvegarde un evenement de paiement."""
+    conn = get_db()
+    conn.execute(
+        """INSERT INTO payments (user_id, provider, amount, currency, status, provider_id, event_id)
+           VALUES (?, ?, ?, ?, ?, ?, ?)""",
+        (user_id, provider, amount, currency, status, provider_id, event_id)
+    )
+    conn.commit()
+    conn.close()
+
+
+def mark_webhook_event_processed(provider, event_id):
+    """
+    Enregistre un event webhook traite.
+    Retourne False si deja traite (idempotence).
+    """
+    conn = get_db()
+    try:
+        conn.execute(
+            "INSERT INTO webhook_events (provider, event_id) VALUES (?, ?)",
+            (provider, event_id)
+        )
+        conn.commit()
+        conn.close()
+        return True
+    except sqlite3.IntegrityError:
+        conn.close()
+        return False
 
 
 def admin_update_user(user_id, data):

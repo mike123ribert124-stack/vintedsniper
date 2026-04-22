@@ -17,7 +17,7 @@
             --text2: #8888aa;
             --radius: 16px;
         }
-        body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); overflow-x:hidden; }
+        body { font-family: Inter, 'Segoe UI', system-ui, -apple-system, sans-serif; background: radial-gradient(1200px 500px at 50% -20%, rgba(124,58,237,0.16), transparent), var(--bg); color: var(--text); overflow-x:hidden; }
         a { color: var(--accent); text-decoration: none; }
 
         /* NAV */
@@ -37,12 +37,15 @@
         .badge { display:inline-block; padding:6px 16px; border-radius:20px; background:rgba(0,212,255,0.1); border:1px solid rgba(0,212,255,0.3); color:var(--accent); font-size:13px; margin-bottom:24px; }
         .hero h1 { font-size:clamp(36px, 6vw, 64px); font-weight:800; line-height:1.1; margin-bottom:20px; }
         .hero h1 span { background:linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
-        .hero p { font-size:18px; color:var(--text2); max-width:600px; margin:0 auto 32px; line-height:1.6; }
+        .hero p { font-size:18px; color:var(--text2); max-width:680px; margin:0 auto 32px; line-height:1.6; }
         .hero-btns { display:flex; gap:16px; justify-content:center; flex-wrap:wrap; }
         .hero-stats { display:flex; gap:40px; justify-content:center; margin-top:48px; }
         .stat { text-align:center; }
         .stat-num { font-size:32px; font-weight:800; color:var(--accent); }
         .stat-label { font-size:13px; color:var(--text2); margin-top:4px; }
+
+        .trust-strip { margin:26px auto 0; display:flex; gap:12px; justify-content:center; flex-wrap:wrap; max-width:880px; }
+        .trust-pill { padding:8px 14px; font-size:12px; border-radius:999px; color:var(--text2); border:1px solid rgba(255,255,255,0.09); background:rgba(255,255,255,0.02); }
 
         /* FEATURES */
         .section { padding:80px 5%; max-width:1200px; margin:0 auto; }
@@ -50,7 +53,7 @@
         .section-title h2 { font-size:36px; font-weight:700; margin-bottom:12px; }
         .section-title p { color:var(--text2); font-size:16px; }
         .features-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:24px; }
-        .feature-card { background:var(--bg2); border:1px solid rgba(255,255,255,0.06); border-radius:var(--radius); padding:32px; transition:0.3s; }
+        .feature-card { background:linear-gradient(180deg, rgba(255,255,255,0.025), rgba(255,255,255,0.01)); border:1px solid rgba(255,255,255,0.06); border-radius:var(--radius); padding:32px; transition:0.3s; }
         .feature-card:hover { border-color:rgba(0,212,255,0.3); transform:translateY(-4px); }
         .feature-icon { font-size:36px; margin-bottom:16px; }
         .feature-card h3 { font-size:18px; margin-bottom:8px; }
@@ -58,7 +61,7 @@
 
         /* PRICING */
         .pricing-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(250px, 1fr)); gap:24px; align-items:start; }
-        .price-card { background:var(--bg2); border:1px solid rgba(255,255,255,0.06); border-radius:var(--radius); padding:32px; position:relative; transition:0.3s; }
+        .price-card { background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015)); border:1px solid rgba(255,255,255,0.06); border-radius:var(--radius); padding:32px; position:relative; transition:0.3s; }
         .price-card.popular { border-color:var(--accent); box-shadow:0 0 40px rgba(0,212,255,0.15); }
         .price-card.popular::before { content:'POPULAIRE'; position:absolute; top:-12px; left:50%; transform:translateX(-50%); background:linear-gradient(135deg, var(--accent), var(--accent2)); color:#fff; padding:4px 16px; border-radius:20px; font-size:11px; font-weight:700; letter-spacing:1px; }
         .price-card h3 { font-size:20px; margin-bottom:4px; }
@@ -90,6 +93,10 @@
 
         /* FOOTER */
         footer { text-align:center; padding:40px 5%; border-top:1px solid rgba(255,255,255,0.06); color:var(--text2); font-size:13px; }
+        .proof-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:16px; margin-top:16px; }
+        .proof-card { background:var(--bg2); border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:16px; }
+        .proof-card strong { display:block; margin-bottom:6px; color:#fff; font-size:14px; }
+        .proof-card p { color:var(--text2); font-size:13px; line-height:1.5; }
 
         /* RESPONSIVE */
         @media(max-width:768px) {
@@ -117,7 +124,7 @@
 <section class="hero">
     <div class="badge">Le bot Vinted #1 en France</div>
     <h1>Trouve les <span>meilleures affaires</span> Vinted avant tout le monde</h1>
-    <p>Notifications instantanees, achat automatique et recherches ultra-rapides. Le bot ultime pour le resell.</p>
+    <p>Reponds avant les autres grace aux alertes ultra-rapides. Configure tes criteres une fois, puis laisse VintedSniper surveiller le marche 24/7.</p>
     <div class="hero-btns">
         <a href="/register" class="btn btn-primary">Commencer gratuitement</a>
         <a href="#pricing" class="btn btn-outline">Voir les tarifs</a>
@@ -127,6 +134,12 @@
         <div class="stat"><div class="stat-num">24/7</div><div class="stat-label">Surveillance</div></div>
         <div class="stat"><div class="stat-num">100+</div><div class="stat-label">Recherches</div></div>
         <div class="stat"><div class="stat-num">Discord</div><div class="stat-label">Alertes instant.</div></div>
+    </div>
+    <div class="trust-strip">
+        <div class="trust-pill">Annulation a tout moment</div>
+        <div class="trust-pill">Aucune CB requise pour commencer</div>
+        <div class="trust-pill">Paiement securise Stripe</div>
+        <div class="trust-pill">Support prioritaire sur plans pro</div>
     </div>
 </section>
 
@@ -268,6 +281,32 @@
     </div>
 </section>
 
+<!-- PROOF -->
+<section class="section">
+    <div class="section-title">
+        <h2>Pourquoi les revendeurs l'utilisent</h2>
+        <p>Un workflow simple, rapide et orienté resultat.</p>
+    </div>
+    <div class="proof-grid">
+        <div class="proof-card">
+            <strong>Gain de temps massif</strong>
+            <p>Tu arretes de rafraichir Vinted manuellement. Le bot surveille les annonces pour toi en continu.</p>
+        </div>
+        <div class="proof-card">
+            <strong>Execution en quelques minutes</strong>
+            <p>Inscription, recherche, alertes. Le setup est fait en quelques etapes depuis ton dashboard.</p>
+        </div>
+        <div class="proof-card">
+            <strong>Plans adaptables</strong>
+            <p>Commence gratuitement, puis upgrade quand ton volume de recherches augmente.</p>
+        </div>
+        <div class="proof-card">
+            <strong>Stack fiable</strong>
+            <p>Interface web claire, notifications multi-canaux, et infrastructure orientee disponibilite.</p>
+        </div>
+    </div>
+</section>
+
 <!-- FAQ -->
 <section class="section" id="faq">
     <div class="section-title">
@@ -314,9 +353,9 @@
 
 <!-- CTA -->
 <section class="section" style="text-align:center;">
-    <h2 style="font-size:32px; margin-bottom:16px;">Pret a sniper les meilleures affaires ?</h2>
-    <p style="color:var(--text2); margin-bottom:24px;">Rejoins les revendeurs qui utilisent VintedSniper pour gagner du temps et de l'argent.</p>
-    <a href="/register" class="btn btn-primary" style="padding:16px 40px; font-size:16px;">Commencer gratuitement</a>
+    <h2 style="font-size:32px; margin-bottom:16px;">Pret a lancer ton setup en moins de 3 minutes ?</h2>
+    <p style="color:var(--text2); margin-bottom:24px;">Cree ton compte, ajoute ta premiere recherche, et recois tes premieres alertes.</p>
+    <a href="/register" class="btn btn-primary" style="padding:16px 40px; font-size:16px;">Demarrer maintenant</a>
 </section>
 
 <!-- FOOTER -->

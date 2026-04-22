@@ -9,6 +9,17 @@ import os
 APP_NAME = "VintedSniper"
 APP_VERSION = "2.0.0"
 SECRET_KEY = os.environ.get("SECRET_KEY", "change-this-secret-key-in-production")
+ENVIRONMENT = os.environ.get("ENVIRONMENT", "production").strip().lower()
+ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "").strip().lower()
+RUN_SCANNER_IN_WEB = os.environ.get("RUN_SCANNER_IN_WEB", "1").strip() == "1"
+
+# Origines autorisees pour les appels API navigateur
+# Format attendu: "https://vintedsniper.fr,https://www.vintedsniper.fr"
+_origins_raw = os.environ.get(
+    "CORS_ALLOWED_ORIGINS",
+    "https://vintedsniper.fr,https://www.vintedsniper.fr,http://localhost:5000,http://127.0.0.1:5000"
+)
+CORS_ALLOWED_ORIGINS = [o.strip() for o in _origins_raw.split(",") if o.strip()]
 
 # ============================================
 # BASE DE DONNEES

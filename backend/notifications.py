@@ -20,6 +20,44 @@ class NotificationManager:
         self._sse_clients = defaultdict(list)  # user_id -> [queue]
         self._lock = threading.Lock()
 
+    def _send_smtp_message(self, to_email, message):
+        """
+        Envoie un message SMTP en essayant automatiquement les modes TLS/SSL.
+        Rend l'envoi plus robuste selon la configuration du provider.
+        """
+        if not SMTP_USER or not SMTP_PASSWORD:
+            raise Exception("SMTP non configure (SMTP_USER/SMTP_PASSWORD manquants)")
+
+        host = SMTP_HOST
+        configured_port = int(SMTP_PORT)
+
+        # Si le port est 465, on tente d'abord SSL.
+        # Sinon (587 en general), on tente d'abord STARTTLS.
+        if configured_port == 465:
+            candidates = [("ssl", 465), ("starttls", 587)]
+        else:
+            candidates = [("starttls", configured_port), ("ssl", 465)]
+
+        last_error = None
+        for mode, port in candidates:
+            try:
+                if mode == "ssl":
+                    with smtplib.SMTP_SSL(host, port, timeout=15) as server:
+                        server.login(SMTP_USER, SMTP_PASSWORD)
+                        server.sendmail(SMTP_USER, to_email, message.as_string())
+                else:
+                    with smtplib.SMTP(host, port, timeout=15) as server:
+                        server.ehlo()
+                        server.starttls()
+                        server.ehlo()
+                        server.login(SMTP_USER, SMTP_PASSWORD)
+                        server.sendmail(SMTP_USER, to_email, message.as_string())
+                return True
+            except Exception as e:
+                last_error = e
+
+        raise Exception(f"Envoi SMTP impossible ({host}). Derniere erreur: {last_error}")
+
     # ==========================================
     # DISCORD
     # ==========================================
@@ -113,10 +151,7 @@ class NotificationManager:
 
             msg.attach(MIMEText(html, "html"))
 
-            with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
-                server.starttls()
-                server.login(SMTP_USER, SMTP_PASSWORD)
-                server.sendmail(SMTP_USER, to_email, msg.as_string())
+            self._send_smtp_message(to_email, msg)
 
             return True
         except Exception as e:
@@ -245,10 +280,7 @@ class NotificationManager:
 
         msg.attach(MIMEText(html, "html"))
 
-        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
-            server.starttls()
-            server.login(SMTP_USER, SMTP_PASSWORD)
-            server.sendmail(SMTP_USER, to_email, msg.as_string())
+        self._send_smtp_message(to_email, msg)
 
         return True
 

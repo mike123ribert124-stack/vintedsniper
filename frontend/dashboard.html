@@ -7,7 +7,7 @@
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
         :root{--bg:#0a0a1a;--bg2:#111128;--bg3:#1a1a3e;--accent:#00d4ff;--accent2:#7c3aed;--green:#2ecc71;--orange:#e67e22;--red:#e74c3c;--text:#e0e0f0;--text2:#8888aa;--radius:12px}
-        body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+        body{font-family:Inter,'Segoe UI',system-ui,sans-serif;background:radial-gradient(900px 400px at 50% -20%,rgba(124,58,237,0.15),transparent),var(--bg);color:var(--text);min-height:100vh}
 
         /* SIDEBAR */
         .sidebar{position:fixed;left:0;top:0;width:240px;height:100vh;background:var(--bg2);border-right:1px solid rgba(255,255,255,0.06);padding:24px 16px;display:flex;flex-direction:column}
@@ -31,7 +31,7 @@
         .stat-card .value.green{color:var(--green)}
 
         /* CARDS */
-        .card{background:var(--bg2);border:1px solid rgba(255,255,255,0.06);border-radius:var(--radius);padding:24px;margin-bottom:24px}
+        .card{background:linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.015));border:1px solid rgba(255,255,255,0.06);border-radius:var(--radius);padding:24px;margin-bottom:24px}
         .card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
         .card-header h3{font-size:16px}
 
@@ -81,13 +81,22 @@
         /* TOAST */
         .toast{position:fixed;bottom:24px;right:24px;background:var(--green);color:#fff;padding:12px 20px;border-radius:10px;font-size:14px;font-weight:500;display:none;z-index:200;animation:slideIn 0.3s}
         @keyframes slideIn{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+        .onboarding-step{display:flex;align-items:flex-start;gap:10px;padding:12px;border-radius:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);margin-bottom:10px}
+        .step-check{width:22px;height:22px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;background:rgba(255,255,255,0.08);color:var(--text2);margin-top:1px}
+        .step-check.done{background:rgba(46,204,113,0.2);color:var(--green)}
+        .onboarding-step strong{display:block;font-size:14px;margin-bottom:2px}
+        .onboarding-step p{font-size:12px;color:var(--text2)}
+        .mobile-nav{display:none}
 
         /* RESPONSIVE */
         @media(max-width:768px){
             .sidebar{display:none}
-            .main{margin-left:0}
+            .main{margin-left:0;padding:20px 14px 84px}
             .form-row{grid-template-columns:1fr}
             .stats-grid{grid-template-columns:1fr 1fr}
+            .mobile-nav{display:flex;position:fixed;left:10px;right:10px;bottom:10px;padding:8px;border-radius:14px;background:rgba(17,17,40,0.96);border:1px solid rgba(255,255,255,0.08);z-index:1000;justify-content:space-between;gap:8px}
+            .mobile-nav button{flex:1;border:none;background:transparent;color:var(--text2);font-size:12px;padding:10px 6px;border-radius:10px}
+            .mobile-nav button.active{background:rgba(0,212,255,0.14);color:var(--accent)}
         }
     </style>
 </head>
@@ -116,6 +125,12 @@
     <!-- OVERVIEW -->
     <div id="section-overview">
         <div class="page-title">Vue d'ensemble</div>
+        <div class="card">
+            <div class="card-header">
+                <h3>Demarrage rapide (3 etapes)</h3>
+            </div>
+            <div id="onboardingChecklist">Chargement...</div>
+        </div>
         <div class="stats-grid">
             <div class="stat-card"><div class="label">Articles trouves</div><div class="value accent" id="statItems">-</div></div>
             <div class="stat-card"><div class="label">Recherches actives</div><div class="value green" id="statSearches">-</div></div>
@@ -164,16 +179,22 @@
             <button class="btn btn-primary" onclick="saveSettings()">Sauvegarder</button>
         </div>
         <div class="card">
-            <h3 style="margin-bottom:16px">Cle API</h3>
-            <p style="font-size:13px;color:var(--text2);margin-bottom:12px">Utilise cette cle pour acceder a l'API depuis tes scripts</p>
-            <div style="background:var(--bg);padding:12px;border-radius:8px;font-family:monospace;font-size:13px;word-break:break-all" id="apiKeyDisplay">...</div>
-        </div>
-        <div class="card">
             <h3 style="margin-bottom:16px">Mon plan</h3>
             <p style="font-size:14px">Plan actuel: <strong id="currentPlan">...</strong></p>
             <button class="btn btn-primary" style="margin-top:12px" onclick="upgradePlan()">Changer de plan</button>
         </div>
+        <div class="card">
+            <h3 style="margin-bottom:16px">Securite compte</h3>
+            <p style="font-size:13px;color:var(--text2);line-height:1.6">Le reset de mot de passe et les sessions sont securises. En cas de doute, reconnecte-toi et change ton mot de passe.</p>
+        </div>
     </div>
+</div>
+
+<div class="mobile-nav">
+    <button id="mnav-overview" class="active" onclick="showSection('overview', this)">Vue</button>
+    <button id="mnav-searches" onclick="showSection('searches', this)">Rech.</button>
+    <button id="mnav-items" onclick="showSection('items', this)">Articles</button>
+    <button id="mnav-settings" onclick="showSection('settings', this)">Params</button>
 </div>
 
 <!-- MODAL: Nouvelle recherche -->
@@ -264,11 +285,16 @@ function renderOverview() {
     document.getElementById('statToday').textContent = s.items_today;
     document.getElementById('userNameDisplay').textContent = userData.user.username;
     document.getElementById('planBadge').textContent = userData.user.plan_name;
+    renderOnboardingChecklist();
 }
 
 async function loadSearches() {
     const data = await api('/api/searches');
     const container = document.getElementById('searchList');
+    const activeCount = (data.searches || []).filter(s => s.is_active).length;
+    userData.stats.active_searches = activeCount;
+    document.getElementById('statSearches').textContent = activeCount;
+    renderOnboardingChecklist();
 
     if (!data.searches || data.searches.length === 0) {
         container.innerHTML = '<p style="color:var(--text2);font-size:14px">Aucune recherche. Clique sur "+ Nouvelle recherche" pour commencer.</p>';
@@ -323,19 +349,49 @@ async function loadItems() {
 
 function renderSettings() {
     document.getElementById('discordWebhook').value = userData.user.discord_webhook || '';
-    document.getElementById('apiKeyDisplay').textContent = userData.user.api_key;
     document.getElementById('currentPlan').textContent = userData.user.plan_name;
+}
+
+function renderOnboardingChecklist() {
+    const searchesDone = (userData.stats.active_searches || 0) > 0;
+    const discordDone = !!(userData.user.discord_webhook || '').trim();
+    const alertsDone = (userData.stats.notifications_sent || 0) > 0;
+    const container = document.getElementById('onboardingChecklist');
+
+    const step = (done, title, desc, action = '') => `
+        <div class="onboarding-step">
+            <div class="step-check ${done ? 'done' : ''}">${done ? '✓' : '•'}</div>
+            <div style="flex:1">
+                <strong>${title}</strong>
+                <p>${desc}</p>
+            </div>
+            ${done ? '' : action}
+        </div>
+    `;
+
+    container.innerHTML = [
+        step(searchesDone, "Cree ta premiere recherche", "Ajoute des mots-cles et un budget pour lancer ton scan.", `<button class="btn btn-sm btn-primary" onclick="showSection('searches')">Creer</button>`),
+        step(discordDone, "Connecte tes notifications", "Ajoute ton webhook Discord pour etre alerte en temps reel.", `<button class="btn btn-sm btn-outline" onclick="showSection('settings')">Configurer</button>`),
+        step(alertsDone, "Recois ta premiere alerte", "Laisse tourner une recherche active, puis surveille les articles entrants.")
+    ].join('');
 }
 
 // ==========================================
 // ACTIONS
 // ==========================================
-function showSection(name) {
+function showSection(name, sourceEl = null) {
     ['overview', 'searches', 'items', 'settings'].forEach(s => {
         document.getElementById('section-' + s).style.display = s === name ? 'block' : 'none';
     });
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-    event.currentTarget.classList.add('active');
+    if (sourceEl) {
+        document.querySelectorAll('.mobile-nav button').forEach(el => el.classList.remove('active'));
+        sourceEl.classList.add('active');
+        return;
+    }
+    if (typeof event !== 'undefined' && event.currentTarget) {
+        event.currentTarget.classList.add('active');
+    }
 }
 
 function openNewSearch() {
@@ -380,12 +436,15 @@ async function deleteSearch(id) {
 }
 
 async function saveSettings() {
+    const webhook = document.getElementById('discordWebhook').value;
     await api('/api/me/settings', {
         method: 'PUT',
         body: JSON.stringify({
-            discord_webhook: document.getElementById('discordWebhook').value,
+            discord_webhook: webhook,
         })
     });
+    userData.user.discord_webhook = webhook;
+    renderOnboardingChecklist();
     showToast('Parametres sauvegardes !');
 }
 

@@ -5,26 +5,35 @@
 API REST pour la plateforme VintedSniper
 """
 import os
-import sys
 import json
 import time
-import secrets
 import threading
+import logging
 from queue import Queue
 from functools import wraps
 
 from flask import (Flask, request, jsonify, render_template,
-                   redirect, session, Response, send_from_directory)
+                   redirect, session, Response)
 from flask_cors import CORS
 
-from config import APP_NAME, SECRET_KEY, PLANS
+from config import (
+    APP_NAME,
+    SECRET_KEY,
+    PLANS,
+    CORS_ALLOWED_ORIGINS,
+    ENVIRONMENT,
+    ADMIN_EMAIL,
+    RUN_SCANNER_IN_WEB
+)
 from database import (init_db, create_user, verify_user, get_user_by_api_key,
                        get_user_searches, create_search, save_found_item,
                        get_user_stats, get_db, ensure_admin_columns, make_admin,
                        get_admin_overview, get_all_users, admin_update_user,
                        admin_toggle_user, get_all_searches, get_all_items,
                        get_system_logs, create_reset_token, verify_reset_token,
-                       reset_password)
+                       reset_password, get_user_by_stripe_customer_id,
+                       update_user_plan_from_subscription, clear_user_subscription,
+                       save_payment_record, mark_webhook_event_processed, get_user_by_id)
 from vinted_engine import VintedEngine
 from notifications import notification_manager
 from payments import payment_manager
@@ -39,7 +48,43 @@ app.secret_key = SECRET_KEY
 app.config['SESSION_COOKIE_HTTPONLY'] = True      # Empeche le vol de cookie via JavaScript
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'     # Protection CSRF basique
 app.config['PERMANENT_SESSION_LIFETIME'] = 86400   # Session expire apres 24h
-CORS(app)
+app.config['SESSION_COOKIE_SECURE'] = ENVIRONMENT == "production"
+
+if ENVIRONMENT == "production" and SECRET_KEY == "change-this-secret-key-in-production":
+    raise RuntimeError("SECRET_KEY non configuree en production")
+if ENVIRONMENT == "production" and not ADMIN_EMAIL:
+    raise RuntimeError("ADMIN_EMAIL doit etre configure en production")
+
+# Restreint les appels cross-origin au domaine officiel + localhost (dev)
+CORS(
+    app,
+    resources={r"/api/*": {"origins": CORS_ALLOWED_ORIGINS}},
+    supports_credentials=True
+)
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='{"ts":"%(asctime)s","level":"%(levelname)s","msg":"%(message)s"}'
+)
+logger = logging.getLogger(APP_NAME)
+
+
+@app.after_request
+def add_security_headers(response):
+    """Ajoute des en-tetes de securite de base a toutes les reponses."""
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    if request.is_secure:
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+
+    # Evite le cache des endpoints sensibles
+    if request.path in ("/api/login", "/api/register", "/api/forgot-password", "/api/reset-password"):
+        response.headers["Cache-Control"] = "no-store"
+        response.headers["Pragma"] = "no-cache"
+
+    return response
 
 # ============================================
 # PROTECTION ANTI-BRUTE-FORCE
@@ -79,9 +124,8 @@ def reset_attempts(ip):
 init_db()
 ensure_admin_columns()
 vinted = VintedEngine(max_workers=5)
-
-# Email admin configurable (premier admin)
-ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "mike123.ribert124@gmail.com")
+if ADMIN_EMAIL:
+    make_admin(ADMIN_EMAIL)
 
 # Scanner en arriere-plan
 scanner_threads = {}
@@ -215,7 +259,6 @@ def api_login():
             "email": user["email"],
             "username": user["username"],
             "plan": user["plan"],
-            "api_key": user["api_key"],
         }
     })
 
@@ -243,26 +286,14 @@ def api_forgot_password():
 
     result = create_reset_token(email)
 
+    # Toujours la meme reponse (anti-enumeration d'emails)
     if result:
         reset_url = f"{request.host_url}reset-password?token={result['token']}"
-
-        # Essayer d'envoyer l'email
-        email_sent = False
         try:
             notification_manager.send_reset_email(email, result["username"], reset_url)
-            email_sent = True
         except Exception as e:
             print(f"[Reset] Erreur envoi email: {e}")
 
-        # Toujours renvoyer le lien direct (tant que le SMTP n'est pas configure)
-        return jsonify({
-            "success": True,
-            "message": "Un lien de reinitialisation a ete genere.",
-            "email_sent": email_sent,
-            "reset_url": reset_url
-        })
-
-    # Email pas trouve - on repond quand meme succes (securite)
     return jsonify({
         "success": True,
         "message": "Si cet email existe, un lien de reinitialisation a ete envoye."
@@ -304,7 +335,6 @@ def api_me():
             "username": user["username"],
             "plan": user["plan"],
             "plan_name": plan["name"],
-            "api_key": user["api_key"],
             "discord_webhook": user.get("discord_webhook", ""),
         },
         "plan": plan,
@@ -463,6 +493,23 @@ def api_plans():
     return jsonify({"plans": PLANS})
 
 
+@app.route("/healthz")
+def healthz():
+    return jsonify({"status": "ok", "service": APP_NAME})
+
+
+@app.route("/readyz")
+def readyz():
+    try:
+        db = get_db()
+        db.execute("SELECT 1").fetchone()
+        db.close()
+        return jsonify({"ready": True})
+    except Exception as e:
+        logger.error(f"readiness_error={e}")
+        return jsonify({"ready": False}), 503
+
+
 @app.route("/api/checkout", methods=["POST"])
 @login_required
 def api_checkout():
@@ -497,6 +544,76 @@ def api_checkout():
         return jsonify({"error": "Erreur de paiement"}), 500
 
 
+@app.route("/api/stripe/webhook", methods=["POST"])
+def api_stripe_webhook():
+    """Webhook Stripe signe et idempotent pour sync des abonnements."""
+    payload = request.get_data(as_text=True)
+    signature = request.headers.get("Stripe-Signature", "")
+    event = payment_manager.handle_webhook(payload, signature)
+    if not event:
+        return jsonify({"error": "Webhook invalide"}), 400
+
+    event_id = event.get("id", "")
+    if not event_id:
+        return jsonify({"error": "Event sans ID"}), 400
+    if not mark_webhook_event_processed("stripe", event_id):
+        return jsonify({"success": True, "duplicate": True})
+
+    event_type = event.get("type", "")
+    event_data = event.get("data", {}).get("object", {})
+    logger.info(f"stripe_webhook type={event_type} id={event_id}")
+
+    if event_type == "checkout.session.completed":
+        customer_id = event_data.get("customer")
+        subscription_id = event_data.get("subscription")
+        user = get_user_by_stripe_customer_id(customer_id) if customer_id else None
+        if user and subscription_id:
+            try:
+                subscription = payment_manager.get_subscription(subscription_id)
+            except Exception:
+                subscription = None
+            if subscription and subscription.get("items", {}).get("data"):
+                price_id = subscription["items"]["data"][0]["price"]["id"]
+                plan_key = payment_manager.get_plan_key_by_price_id(price_id)
+                if plan_key:
+                    update_user_plan_from_subscription(user["id"], plan_key, subscription_id)
+                    amount = (event_data.get("amount_total") or 0) / 100
+                    currency = (event_data.get("currency") or "eur").upper()
+                    save_payment_record(
+                        user_id=user["id"],
+                        provider="stripe",
+                        amount=amount,
+                        currency=currency,
+                        status="completed",
+                        provider_id=subscription_id,
+                        event_id=event_id
+                    )
+
+    elif event_type in ("customer.subscription.updated", "customer.subscription.created"):
+        customer_id = event_data.get("customer")
+        subscription_id = event_data.get("id")
+        status = event_data.get("status")
+        user = get_user_by_stripe_customer_id(customer_id) if customer_id else None
+        if user and subscription_id:
+            if status in ("active", "trialing"):
+                items = event_data.get("items", {}).get("data", [])
+                if items:
+                    price_id = items[0].get("price", {}).get("id")
+                    plan_key = payment_manager.get_plan_key_by_price_id(price_id)
+                    if plan_key:
+                        update_user_plan_from_subscription(user["id"], plan_key, subscription_id)
+            else:
+                clear_user_subscription(user["id"])
+
+    elif event_type in ("customer.subscription.deleted",):
+        customer_id = event_data.get("customer")
+        user = get_user_by_stripe_customer_id(customer_id) if customer_id else None
+        if user:
+            clear_user_subscription(user["id"])
+
+    return jsonify({"success": True})
+
+
 # ============================================
 # ADMIN MIDDLEWARE
 # ============================================
@@ -516,13 +633,9 @@ def admin_required(f):
             return jsonify({"error": "Utilisateur introuvable"}), 401
 
         user = dict(user)
-        # Admin si is_admin=1 OU si email = ADMIN_EMAIL
-        if not user.get("is_admin") and user["email"] != ADMIN_EMAIL:
+        # Acces admin strict: flag is_admin uniquement
+        if not user.get("is_admin"):
             return jsonify({"error": "Acces refuse - Admin uniquement"}), 403
-
-        # Auto-promote si email admin mais pas encore flag
-        if user["email"] == ADMIN_EMAIL and not user.get("is_admin"):
-            make_admin(user["email"])
 
         request.user = user
         return f(*args, **kwargs)
@@ -543,7 +656,7 @@ def admin_page():
     if not user:
         return redirect("/login")
     user = dict(user)
-    if not user.get("is_admin") and user["email"] != ADMIN_EMAIL:
+    if not user.get("is_admin"):
         return redirect("/dashboard")
     return render_template("admin.html")
 
@@ -716,8 +829,12 @@ def run_scanner():
 def start_app():
     """Demarre l'application et le scanner"""
     # Lancer le scanner en arriere-plan
-    scanner = threading.Thread(target=run_scanner, daemon=True)
-    scanner.start()
+    if RUN_SCANNER_IN_WEB:
+        scanner = threading.Thread(target=run_scanner, daemon=True)
+        scanner.start()
+        logger.info("scanner_started_in_web=true")
+    else:
+        logger.info("scanner_started_in_web=false")
 
     # Lancer Flask
     port = int(os.environ.get("PORT", 5000))
