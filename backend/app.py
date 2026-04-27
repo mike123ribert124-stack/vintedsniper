@@ -128,17 +128,6 @@ vinted = VintedEngine(max_workers=5)
 if ADMIN_EMAIL:
     make_admin(ADMIN_EMAIL)
 
-# ============================================
-# DEMARRAGE DU SCANNER (module-level)
-# Compatible Gunicorn : s'execute au chargement du module dans le worker
-# ============================================
-if RUN_SCANNER_IN_WEB:
-    _scanner_thread = threading.Thread(target=run_scanner, daemon=True, name="VintedScanner")
-    _scanner_thread.start()
-    logger.info("scanner_started=true")
-else:
-    logger.info("scanner_started=false (RUN_SCANNER_IN_WEB=0)")
-
 # Scanner en arriere-plan
 scanner_threads = {}
 
@@ -931,6 +920,18 @@ def run_scanner():
         except Exception as e:
             print(f"[Scanner] Erreur: {e}")
             time.sleep(5)
+
+
+# ============================================
+# DEMARRAGE DU SCANNER (module-level, apres definition de run_scanner)
+# Compatible Gunicorn : s'execute au chargement du module dans le worker
+# ============================================
+if RUN_SCANNER_IN_WEB:
+    _scanner_thread = threading.Thread(target=run_scanner, daemon=True, name="VintedScanner")
+    _scanner_thread.start()
+    logger.info("scanner_started=true")
+else:
+    logger.info("scanner_started=false (RUN_SCANNER_IN_WEB=0)")
 
 
 # ============================================
