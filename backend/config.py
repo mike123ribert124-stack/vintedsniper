@@ -59,7 +59,7 @@ PLANS = {
         "price_monthly": 50,
         "price_yearly": 480,        # 40€/mois = -20%
         "max_searches": 30,
-        "scan_interval": 10,        # 10 secondes
+        "scan_interval": 5,         # 5 secondes
         "notifications": ["discord", "email", "browser"],
         "auto_buy": True,
         "max_favorites": 200,
@@ -72,8 +72,8 @@ PLANS = {
         "price_monthly": 90,
         "price_yearly": 864,        # 72€/mois = -20%
         "max_searches": 100,
-        "scan_interval": 5,         # 5 secondes
-        "notifications": ["discord", "email", "sms", "browser"],
+        "scan_interval": 1,         # 1 seconde
+        "notifications": ["discord", "telegram", "email", "browser"],
         "auto_buy": True,
         "max_favorites": -1,        # Illimite
         "stripe_price_id": os.environ.get("STRIPE_VIP_PRICE_ID", ""),
@@ -104,6 +104,11 @@ SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
 SMTP_USER = os.environ.get("SMTP_USER", "")
 SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
 BREVO_API_KEY = os.environ.get("BREVO_API_KEY", "")
+
+# ============================================
+# TELEGRAM
+# ============================================
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 
 # ============================================
 # VINTED

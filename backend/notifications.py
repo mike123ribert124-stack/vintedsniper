@@ -10,7 +10,7 @@ import threading
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from collections import defaultdict
-from config import SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, BREVO_API_KEY, APP_NAME
+from config import SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, BREVO_API_KEY, TELEGRAM_BOT_TOKEN, APP_NAME
 
 
 class NotificationManager:
@@ -106,6 +106,50 @@ class NotificationManager:
             return resp.status_code in (200, 204)
         except Exception as e:
             print(f"[Notif] Discord erreur: {e}")
+            return False
+
+    # ==========================================
+    # TELEGRAM (plus rapide que Discord)
+    # ==========================================
+    def send_telegram(self, chat_id, item, search_name=""):
+        """Envoie une alerte Telegram instantanee via Bot API"""
+        if not TELEGRAM_BOT_TOKEN or not chat_id:
+            return False
+
+        price = item.get("price", 0)
+        title = item.get("title", "Article")
+        url = item.get("url", "")
+        brand = item.get("brand") or "N/A"
+        size = item.get("size") or "N/A"
+        seller = item.get("user", "?")
+
+        if price <= 5:
+            tag = "🔥 ULTRA DEAL"
+        elif price <= 15:
+            tag = "✅ BONNE AFFAIRE"
+        else:
+            tag = "👀 A VOIR"
+
+        text = (
+            f"{tag}\n"
+            f"<b>{title}</b>\n"
+            f"💶 <b>{price:.2f} EUR</b>\n"
+            f"👟 Marque: {brand} | Taille: {size}\n"
+            f"👤 Vendeur: {seller}\n"
+            f"🔍 Recherche: {search_name}\n"
+            f'<a href="{url}">👉 Voir sur Vinted</a>'
+        )
+
+        try:
+            resp = requests.post(
+                f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage",
+                json={"chat_id": chat_id, "text": text, "parse_mode": "HTML",
+                      "disable_web_page_preview": False},
+                timeout=8
+            )
+            return resp.status_code == 200
+        except Exception as e:
+            print(f"[Notif] Telegram erreur: {e}")
             return False
 
     # ==========================================
@@ -210,6 +254,11 @@ class NotificationManager:
             from config import PLANS
             plan = PLANS.get(user.get("plan", "free"), PLANS["free"])
             channels = plan.get("notifications", ["discord"])
+
+        if "telegram" in channels and user.get("telegram_chat_id"):
+            results["telegram"] = self.send_telegram(
+                user["telegram_chat_id"], item, search_name
+            )
 
         if "discord" in channels and user.get("discord_webhook"):
             results["discord"] = self.send_discord(

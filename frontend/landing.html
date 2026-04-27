@@ -4,388 +4,712 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VintedSniper - Bot Vinted #1 pour le Resell</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
-        * { margin:0; padding:0; box-sizing:border-box; }
+        *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
         :root {
-            --bg:#06060f;
-            --bg2:#111122;
-            --card:rgba(255,255,255,0.04);
-            --line:rgba(255,255,255,0.1);
-            --text:#f1f2ff;
-            --text2:#a3a6c9;
-            --brand:#7f5af0;
-            --brand2:#2cb5ff;
-            --green:#3ad29f;
-            --radius:18px;
+            --bg:        #080810;
+            --bg2:       #0d0d1a;
+            --bg3:       #11111f;
+            --gold:      #d4a843;
+            --gold2:     #f0c060;
+            --gold-dim:  rgba(212,168,67,.18);
+            --gold-line: rgba(212,168,67,.35);
+            --cyan:      #00c8e0;
+            --cyan-dim:  rgba(0,200,224,.14);
+            --glass:     rgba(255,255,255,.038);
+            --glass2:    rgba(255,255,255,.06);
+            --line:      rgba(255,255,255,.08);
+            --line2:     rgba(255,255,255,.14);
+            --text:      #eef0ff;
+            --text2:     #8a8fad;
+            --text3:     #c0c4dc;
+            --green:     #2dd98a;
+            --r:         16px;
+            --r2:        22px;
         }
+
+        html { scroll-behavior: smooth; }
+
         body {
-            font-family: Inter, 'Segoe UI', system-ui, -apple-system, sans-serif;
-            background:
-                radial-gradient(1200px 620px at 10% -30%, rgba(127,90,240,.30), transparent),
-                radial-gradient(900px 620px at 95% -25%, rgba(44,181,255,.24), transparent),
-                var(--bg);
+            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg);
             color: var(--text);
-            overflow-x:hidden;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
         }
-        a { color: var(--brand2); text-decoration: none; }
 
+        /* ── NOISE TEXTURE ── */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 0;
+            opacity: .5;
+        }
+
+        /* ── AMBIENT GLOWS ── */
+        .glow-top {
+            position: fixed;
+            top: -200px; left: 50%;
+            transform: translateX(-50%);
+            width: 900px; height: 500px;
+            background: radial-gradient(ellipse, rgba(212,168,67,.12) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+        .glow-left {
+            position: fixed;
+            top: 30%; left: -200px;
+            width: 600px; height: 600px;
+            background: radial-gradient(ellipse, rgba(0,200,224,.07) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── UTILS ── */
+        a { text-decoration: none; color: var(--cyan); }
+        .grad-text {
+            background: linear-gradient(135deg, var(--gold2) 0%, var(--gold) 50%, #e8a020 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .grad-text-cyan {
+            background: linear-gradient(135deg, #fff 0%, var(--cyan) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .container { max-width: 1180px; margin: 0 auto; padding: 0 5%; }
+
+        /* ── BUTTONS ── */
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+            padding: 12px 24px; border-radius: 12px;
+            font-weight: 700; font-size: 14px; letter-spacing: .3px;
+            cursor: pointer; transition: all .25s; border: 1px solid transparent;
+            position: relative; z-index: 1; white-space: nowrap;
+        }
+        .btn-gold {
+            background: linear-gradient(135deg, #c9930a, var(--gold2));
+            color: #0d0a00;
+            box-shadow: 0 8px 28px rgba(212,168,67,.35), inset 0 1px 0 rgba(255,255,255,.2);
+        }
+        .btn-gold:hover { transform: translateY(-2px); box-shadow: 0 14px 36px rgba(212,168,67,.45); }
+        .btn-outline {
+            border: 1px solid var(--line2);
+            color: var(--text3);
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+        }
+        .btn-outline:hover { border-color: var(--gold-line); color: var(--gold2); }
+        .btn-lg { padding: 15px 36px; font-size: 16px; border-radius: 14px; }
+
+        /* ── NAV ── */
         nav {
-            position:sticky;
-            top:0;
-            z-index:20;
-            backdrop-filter: blur(12px);
-            background: rgba(6,6,15,0.75);
-            border-bottom:1px solid rgba(255,255,255,.07);
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-            padding:18px 5%;
-            max-width:1200px;
-            margin:0 auto;
+            position: sticky; top: 0; z-index: 100;
+            backdrop-filter: blur(18px) saturate(160%);
+            background: rgba(8,8,16,.82);
+            border-bottom: 1px solid var(--line);
         }
-        .logo { font-size:25px; font-weight:900; letter-spacing:-.5px; background:linear-gradient(135deg, #fff, #c9b6ff 55%, #a9ddff); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
-        .nav-links { display:flex; gap:20px; align-items:center; }
-        .nav-links a { color:var(--text2); font-size:14px; transition:.2s; }
-        .nav-links a:hover { color:var(--text); }
+        .nav-inner {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 16px 5%; max-width: 1180px; margin: 0 auto;
+        }
+        .logo {
+            font-size: 22px; font-weight: 900; letter-spacing: -.5px;
+            background: linear-gradient(135deg, #fff 30%, var(--gold) 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .nav-links { display: flex; gap: 22px; align-items: center; }
+        .nav-links a { color: var(--text2); font-size: 14px; font-weight: 500; transition: color .2s; }
+        .nav-links a:hover { color: var(--text); }
 
-        .btn { display:inline-flex; align-items:center; justify-content:center; padding:11px 22px; border-radius:12px; font-weight:700; font-size:14px; cursor:pointer; transition:all .25s; border:1px solid transparent; }
-        .btn-primary { background:linear-gradient(135deg, var(--brand), var(--brand2)); color:#fff; box-shadow:0 14px 32px rgba(44,181,255,.26); }
-        .btn-primary:hover { transform:translateY(-2px); }
-        .btn-outline { border:1px solid var(--line); color:var(--text); background:rgba(255,255,255,.02); }
-        .btn-outline:hover { border-color:rgba(127,90,240,.45); }
-
+        /* ── HERO ── */
         .hero {
-            text-align:center;
-            padding:90px 5% 66px;
-            max-width:1050px;
-            margin:0 auto;
-            position:relative;
+            text-align: center;
+            padding: 100px 5% 80px;
+            max-width: 1180px;
+            margin: 0 auto;
+            position: relative;
         }
-        .hero::before { content:''; position:absolute; inset:auto 0 0; height:1px; background:linear-gradient(90deg, transparent, rgba(255,255,255,.16), transparent); }
-        .badge { display:inline-block; padding:8px 16px; border-radius:999px; background:rgba(127,90,240,.22); border:1px solid rgba(127,90,240,.5); color:#dbd0ff; font-size:12px; margin-bottom:22px; }
-        .hero h1 { font-size:clamp(42px, 6.4vw, 76px); font-weight:900; line-height:1.02; margin-bottom:18px; letter-spacing:-1.6px; }
-        .hero h1 span { background:linear-gradient(135deg, #fff, #b9dfff, #ceb8ff); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
-        .hero p { font-size:18px; color:var(--text2); max-width:760px; margin:0 auto 30px; line-height:1.7; }
-        .hero-btns { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
-        .hero-stats { display:flex; gap:14px; justify-content:center; margin-top:36px; flex-wrap:wrap; }
-        .stat { text-align:left; border:1px solid var(--line); background:var(--card); border-radius:14px; min-width:150px; padding:12px 14px; }
-        .stat-num { font-size:30px; font-weight:900; color:#fff; line-height:1; margin-bottom:4px; }
-        .stat-label { font-size:12px; color:var(--text2); }
-        .trust-strip { margin:26px auto 0; display:flex; gap:10px; justify-content:center; flex-wrap:wrap; max-width:880px; }
-        .trust-pill { padding:8px 12px; font-size:12px; border-radius:999px; color:var(--text2); border:1px solid var(--line); background:rgba(255,255,255,.015); }
+        .hero-badge {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 8px 18px; border-radius: 999px;
+            background: var(--gold-dim);
+            border: 1px solid var(--gold-line);
+            color: var(--gold2); font-size: 12px; font-weight: 700;
+            letter-spacing: .6px; text-transform: uppercase;
+            margin-bottom: 28px;
+        }
+        .hero-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gold2); animation: pulse 2s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:.4;} }
 
-        .section { padding:82px 5%; max-width:1200px; margin:0 auto; }
-        .section-title { text-align:center; margin-bottom:44px; }
-        .section-title h2 { font-size:40px; font-weight:800; margin-bottom:10px; letter-spacing:-1px; }
-        .section-title p { color:var(--text2); font-size:16px; }
-        .features-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px; }
-        .feature-card { background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:26px; transition:.25s; }
-        .feature-card:hover { border-color:rgba(127,90,240,.5); transform:translateY(-3px); }
-        .feature-icon { font-size:34px; margin-bottom:12px; }
-        .feature-card h3 { font-size:18px; margin-bottom:8px; }
-        .feature-card p { color:var(--text2); font-size:14px; line-height:1.7; }
+        .hero h1 {
+            font-size: clamp(42px, 6.5vw, 80px);
+            font-weight: 900;
+            line-height: 1.0;
+            letter-spacing: -2px;
+            margin-bottom: 22px;
+        }
+        .hero h1 .line2 { display: block; }
+        .hero p {
+            font-size: 18px; color: var(--text2); line-height: 1.75;
+            max-width: 680px; margin: 0 auto 36px;
+        }
+        .hero-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 52px; }
 
-        .pricing-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(250px, 1fr)); gap:16px; align-items:start; }
-        .price-card { background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:30px; position:relative; transition:.25s; }
-        .price-card.popular { border-color:rgba(44,181,255,.65); box-shadow:0 18px 34px rgba(44,181,255,.16); }
-        .price-card.popular::before { content:'POPULAIRE'; position:absolute; top:-11px; left:18px; background:linear-gradient(135deg, var(--brand), var(--brand2)); color:#fff; padding:4px 11px; border-radius:999px; font-size:11px; font-weight:800; letter-spacing:.5px; }
-        .price-card h3 { font-size:21px; margin-bottom:4px; }
-        .price-card .plan-desc { color:var(--text2); font-size:13px; margin-bottom:16px; }
-        .price-amount { font-size:44px; font-weight:900; margin:12px 0; letter-spacing:-1px; }
-        .price-amount span { font-size:15px; color:var(--text2); font-weight:500; }
-        .price-features { list-style:none; margin:18px 0; }
-        .price-features li { padding:8px 0; font-size:14px; color:var(--text2); display:flex; align-items:center; gap:8px; }
-        .price-features li::before { content:'✓'; color:var(--green); font-weight:800; }
-        .price-features li.disabled { opacity:.45; }
-        .price-features li.disabled::before { content:'✕'; color:#8087aa; }
-        .price-card .btn { width:100%; text-align:center; margin-top:14px; padding:13px; font-size:15px; }
+        /* ── STATS BAR ── */
+        .stats-bar {
+            display: flex; justify-content: center; flex-wrap: wrap; gap: 12px;
+        }
+        .stat-box {
+            background: var(--glass);
+            border: 1px solid var(--line2);
+            border-radius: 14px;
+            padding: 16px 22px;
+            min-width: 140px;
+            text-align: left;
+            backdrop-filter: blur(12px);
+            transition: border-color .2s;
+        }
+        .stat-box:hover { border-color: var(--gold-line); }
+        .stat-num { font-size: 32px; font-weight: 900; line-height: 1; margin-bottom: 5px; }
+        .stat-label { font-size: 12px; color: var(--text2); }
 
-        .steps { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:16px; }
-        .step { text-align:center; padding:24px; background:var(--card); border:1px solid var(--line); border-radius:var(--radius); }
-        .step-num { width:46px; height:46px; border-radius:999px; background:linear-gradient(135deg, var(--brand), var(--brand2)); color:#fff; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:800; margin:0 auto 14px; }
-        .step h3 { margin-bottom:8px; }
-        .step p { color:var(--text2); font-size:14px; line-height:1.6; }
+        /* ── TRUST PILLS ── */
+        .trust-strip { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 26px; }
+        .trust-pill {
+            padding: 7px 14px; font-size: 12px; border-radius: 999px;
+            color: var(--text2); border: 1px solid var(--line);
+            background: rgba(255,255,255,.02);
+        }
+        .trust-pill::before { content: '✓  '; color: var(--green); font-weight: 800; }
 
-        .faq-item { background:var(--card); border:1px solid var(--line); border-radius:12px; margin-bottom:10px; overflow:hidden; }
-        .faq-q { padding:18px 22px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; font-weight:700; }
-        .faq-q:hover { color:#ddd8ff; }
-        .faq-a { padding:0 22px 18px; color:var(--text2); font-size:14px; line-height:1.7; display:none; }
-        .faq-item.open .faq-a { display:block; }
-        .faq-item.open .faq-arrow { transform:rotate(180deg); }
-        .faq-arrow { transition:.25s; }
+        /* ── DIVIDER ── */
+        .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--line2) 30%, var(--line2) 70%, transparent); margin: 0; }
 
-        footer { text-align:center; padding:42px 5%; border-top:1px solid var(--line); color:var(--text2); font-size:13px; }
-        .proof-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:14px; margin-top:16px; }
-        .proof-card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px; }
-        .proof-card strong { display:block; margin-bottom:6px; color:#fff; font-size:14px; }
-        .proof-card p { color:var(--text2); font-size:13px; line-height:1.6; }
+        /* ── SECTIONS ── */
+        .section { padding: 88px 5%; max-width: 1180px; margin: 0 auto; }
+        .section-title { text-align: center; margin-bottom: 52px; }
+        .section-label {
+            display: inline-block;
+            font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+            color: var(--gold); margin-bottom: 12px;
+        }
+        .section-title h2 {
+            font-size: clamp(30px, 4vw, 48px);
+            font-weight: 800; letter-spacing: -1px; margin-bottom: 12px;
+        }
+        .section-title p { color: var(--text2); font-size: 16px; }
 
-        @media(max-width:768px) {
-            nav { padding:14px 4%; }
-            .nav-links a:nth-child(-n+3) { display:none; }
-            .hero-stats { gap:10px; }
-            .stat { min-width:45%; }
-            .section-title h2 { font-size:33px; }
-            .pricing-grid { grid-template-columns:1fr; max-width:430px; margin:0 auto; }
+        /* ── FEATURES ── */
+        .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 16px; }
+        .feature-card {
+            background: var(--glass);
+            border: 1px solid var(--line);
+            border-radius: var(--r2);
+            padding: 28px;
+            transition: all .3s;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+        .feature-card::before {
+            content: '';
+            position: absolute; inset: 0;
+            background: radial-gradient(600px circle at var(--mx,50%) var(--my,50%), rgba(212,168,67,.05), transparent 40%);
+            opacity: 0; transition: opacity .4s;
+            pointer-events: none;
+        }
+        .feature-card:hover { border-color: var(--gold-line); transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,.3); }
+        .feature-card:hover::before { opacity: 1; }
+        .feature-icon {
+            width: 48px; height: 48px; border-radius: 14px;
+            background: var(--gold-dim); border: 1px solid var(--gold-line);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px; margin-bottom: 16px;
+        }
+        .feature-card h3 { font-size: 17px; font-weight: 700; margin-bottom: 9px; }
+        .feature-card p { color: var(--text2); font-size: 14px; line-height: 1.7; }
+        .feature-soon {
+            position: absolute; top: 16px; right: 16px;
+            background: rgba(0,200,224,.15); border: 1px solid rgba(0,200,224,.4);
+            color: var(--cyan); font-size: 10px; font-weight: 800;
+            padding: 3px 9px; border-radius: 999px; letter-spacing: .6px;
+        }
+
+        /* ── HOW IT WORKS ── */
+        .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+        .step {
+            text-align: center; padding: 32px 24px;
+            background: var(--glass); border: 1px solid var(--line);
+            border-radius: var(--r2); transition: .25s;
+            backdrop-filter: blur(10px);
+        }
+        .step:hover { border-color: var(--gold-line); }
+        .step-num {
+            width: 52px; height: 52px; border-radius: 999px;
+            background: linear-gradient(135deg, #c9930a, var(--gold2));
+            color: #0d0a00; display: flex; align-items: center; justify-content: center;
+            font-size: 22px; font-weight: 900; margin: 0 auto 18px;
+            box-shadow: 0 8px 24px rgba(212,168,67,.3);
+        }
+        .step h3 { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+        .step p { color: var(--text2); font-size: 14px; line-height: 1.65; }
+
+        /* ── PRICING ── */
+        .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; align-items: start; }
+        .price-card {
+            background: var(--glass);
+            border: 1px solid var(--line);
+            border-radius: var(--r2); padding: 32px;
+            position: relative; transition: all .3s;
+            backdrop-filter: blur(14px);
+        }
+        .price-card:hover { transform: translateY(-4px); box-shadow: 0 24px 48px rgba(0,0,0,.3); }
+
+        .price-card.popular {
+            border-color: var(--gold-line);
+            background: linear-gradient(160deg, rgba(212,168,67,.09), rgba(212,168,67,.03));
+            box-shadow: 0 0 0 1px var(--gold-line), 0 20px 50px rgba(212,168,67,.12);
+        }
+        .price-card.vip-card {
+            border-color: rgba(0,200,224,.35);
+            background: linear-gradient(160deg, rgba(0,200,224,.07), rgba(0,200,224,.02));
+        }
+
+        .popular-badge {
+            position: absolute; top: -12px; left: 20px;
+            background: linear-gradient(135deg, #c9930a, var(--gold2));
+            color: #0d0a00; padding: 4px 14px; border-radius: 999px;
+            font-size: 10px; font-weight: 900; letter-spacing: .8px;
+        }
+        .vip-badge {
+            position: absolute; top: -12px; left: 20px;
+            background: linear-gradient(135deg, #006080, var(--cyan));
+            color: #000; padding: 4px 14px; border-radius: 999px;
+            font-size: 10px; font-weight: 900; letter-spacing: .8px;
+        }
+
+        .price-card h3 { font-size: 22px; font-weight: 800; margin-bottom: 4px; }
+        .plan-desc { color: var(--text2); font-size: 13px; margin-bottom: 18px; }
+        .price-amount {
+            font-size: 48px; font-weight: 900; letter-spacing: -2px;
+            line-height: 1; margin: 16px 0 4px;
+        }
+        .price-amount.gold-price { color: var(--gold2); }
+        .price-amount.cyan-price { color: var(--cyan); }
+        .price-period { font-size: 14px; color: var(--text2); font-weight: 500; margin-bottom: 20px; }
+        .price-features { list-style: none; margin: 20px 0 24px; display: flex; flex-direction: column; gap: 10px; }
+        .price-features li {
+            font-size: 14px; color: var(--text3);
+            display: flex; align-items: center; gap: 10px;
+        }
+        .check { color: var(--green); font-weight: 800; font-size: 15px; flex-shrink: 0; }
+        .cross { color: #4a4f6a; font-weight: 800; font-size: 15px; flex-shrink: 0; }
+        .price-features li.disabled { opacity: .5; }
+        .soon-tag { font-size: 10px; color: var(--cyan); font-weight: 700; }
+        .price-card .btn { width: 100%; padding: 14px; font-size: 15px; }
+
+        /* ── PROOF / BENEFITS ── */
+        .proof-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+        .proof-card {
+            background: var(--glass); border: 1px solid var(--line);
+            border-radius: var(--r2); padding: 24px;
+            backdrop-filter: blur(10px); transition: .25s;
+        }
+        .proof-card:hover { border-color: var(--gold-line); }
+        .proof-icon { font-size: 28px; margin-bottom: 14px; }
+        .proof-card strong { display: block; font-size: 15px; font-weight: 700; margin-bottom: 8px; color: #fff; }
+        .proof-card p { color: var(--text2); font-size: 13px; line-height: 1.65; }
+
+        /* ── FAQ ── */
+        .faq-list { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; }
+        .faq-item {
+            background: var(--glass); border: 1px solid var(--line);
+            border-radius: 14px; overflow: hidden;
+            backdrop-filter: blur(10px); transition: border-color .2s;
+        }
+        .faq-item.open { border-color: var(--gold-line); }
+        .faq-q {
+            padding: 20px 24px; cursor: pointer;
+            display: flex; justify-content: space-between; align-items: center;
+            font-weight: 700; font-size: 15px; transition: color .2s;
+        }
+        .faq-q:hover { color: var(--gold2); }
+        .faq-a { padding: 0 24px 20px; color: var(--text2); font-size: 14px; line-height: 1.75; display: none; }
+        .faq-item.open .faq-a { display: block; }
+        .faq-arrow { transition: .25s; color: var(--text2); }
+        .faq-item.open .faq-arrow { transform: rotate(180deg); color: var(--gold2); }
+
+        /* ── CTA BANNER ── */
+        .cta-section {
+            margin: 0 5% 80px;
+            max-width: 1100px;
+            margin-left: auto; margin-right: auto;
+            background: linear-gradient(135deg, rgba(212,168,67,.12) 0%, rgba(0,200,224,.07) 100%);
+            border: 1px solid var(--gold-line);
+            border-radius: 24px; padding: 60px 40px;
+            text-align: center;
+            position: relative; overflow: hidden;
+        }
+        .cta-section::before {
+            content: '';
+            position: absolute; top: -60px; left: 50%;
+            transform: translateX(-50%);
+            width: 500px; height: 200px;
+            background: radial-gradient(ellipse, rgba(212,168,67,.2), transparent 70%);
+            pointer-events: none;
+        }
+        .cta-section h2 { font-size: clamp(26px, 4vw, 40px); font-weight: 900; margin-bottom: 14px; }
+        .cta-section p { color: var(--text2); font-size: 16px; margin-bottom: 30px; }
+
+        /* ── FOOTER ── */
+        footer {
+            border-top: 1px solid var(--line);
+            padding: 36px 5%;
+            text-align: center;
+            color: var(--text2); font-size: 13px;
+        }
+        footer a { color: var(--text2); transition: color .2s; }
+        footer a:hover { color: var(--gold2); }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 768px) {
+            .nav-links a:not(.btn) { display: none; }
+            .hero h1 { letter-spacing: -1px; }
+            .stats-bar .stat-box { min-width: calc(50% - 6px); }
+            .pricing-grid { grid-template-columns: 1fr; max-width: 420px; margin: 0 auto; }
+            .cta-section { padding: 40px 24px; }
         }
     </style>
 </head>
 <body>
 
-<!-- NAV -->
+<div class="glow-top"></div>
+<div class="glow-left"></div>
+
+<!-- ── NAV ── -->
 <nav>
-    <div class="logo">VintedSniper</div>
-    <div class="nav-links">
-        <a href="#features">Fonctionnalites</a>
-        <a href="#pricing">Tarifs</a>
-        <a href="#faq">FAQ</a>
-        <a href="/login" class="btn btn-outline">Connexion</a>
-        <a href="/register" class="btn btn-primary">Commencer</a>
+    <div class="nav-inner">
+        <div class="logo">⚡ VintedSniper</div>
+        <div class="nav-links">
+            <a href="#features">Fonctionnalités</a>
+            <a href="#pricing">Tarifs</a>
+            <a href="#faq">FAQ</a>
+            <a href="/login" class="btn btn-outline" style="padding:9px 18px;">Connexion</a>
+            <a href="/register" class="btn btn-gold" style="padding:9px 18px;">Commencer</a>
+        </div>
     </div>
 </nav>
 
-<!-- HERO -->
+<!-- ── HERO ── -->
 <section class="hero">
-    <div class="badge">Plateforme premium resell - France</div>
-    <h1>Sniper les <span>meilleures annonces</span> avant tout le monde</h1>
-    <p>VintedSniper surveille Vinted 24/7, detecte les annonces selon tes criteres, et t'alerte instantanement pour que tu passes avant la concurrence.</p>
+    <div class="hero-badge">
+        <span class="dot"></span>
+        Plateforme premium · Resell France
+    </div>
+
+    <h1>
+        Snipe les meilleures annonces<br>
+        <span class="line2 grad-text">avant tout le monde.</span>
+    </h1>
+
+    <p>VintedSniper surveille Vinted 24/7, détecte les articles selon tes critères et t'alerte instantanément — Discord, Telegram, Email. Tu passes avant la concurrence.</p>
+
     <div class="hero-btns">
-        <a href="/register" class="btn btn-primary">Demarrer gratuitement</a>
-        <a href="#pricing" class="btn btn-outline">Voir les tarifs</a>
+        <a href="/register" class="btn btn-gold btn-lg">Démarrer gratuitement</a>
+        <a href="#pricing" class="btn btn-outline btn-lg">Voir les tarifs</a>
     </div>
-    <div class="hero-stats">
-        <div class="stat"><div class="stat-num">5s</div><div class="stat-label">Temps de scan</div></div>
-        <div class="stat"><div class="stat-num">24/7</div><div class="stat-label">Surveillance</div></div>
-        <div class="stat"><div class="stat-num">100+</div><div class="stat-label">Recherches</div></div>
-        <div class="stat"><div class="stat-num">Discord</div><div class="stat-label">Alertes instant.</div></div>
+
+    <div class="stats-bar">
+        <div class="stat-box">
+            <div class="stat-num grad-text">1s</div>
+            <div class="stat-label">Scan VIP</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-num grad-text">24/7</div>
+            <div class="stat-label">Surveillance</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-num grad-text">100+</div>
+            <div class="stat-label">Recherches</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-num grad-text">4</div>
+            <div class="stat-label">Canaux d'alerte</div>
+        </div>
     </div>
+
     <div class="trust-strip">
-        <div class="trust-pill">Annulation a tout moment</div>
+        <div class="trust-pill">Annulation à tout moment</div>
         <div class="trust-pill">Aucune CB requise pour commencer</div>
-        <div class="trust-pill">Paiement securise Stripe</div>
-        <div class="trust-pill">Support prioritaire sur plans pro</div>
+        <div class="trust-pill">Paiement sécurisé Stripe</div>
+        <div class="trust-pill">Support prioritaire Pro/VIP</div>
     </div>
 </section>
 
-<!-- FEATURES -->
+<div class="divider"></div>
+
+<!-- ── FEATURES ── -->
 <section class="section" id="features">
     <div class="section-title">
+        <div class="section-label">Fonctionnalités</div>
         <h2>Tout ce qu'il faut pour le resell</h2>
         <p>Des outils professionnels pour trouver et acheter les meilleures affaires</p>
     </div>
+
     <div class="features-grid">
         <div class="feature-card">
             <div class="feature-icon">⚡</div>
             <h3>Scan ultra-rapide</h3>
-            <p>Scan multi-thread toutes les 5 secondes. Sois le premier a voir les nouvelles annonces avant les autres.</p>
+            <p>Scan toutes les 5 secondes en Pro, toutes les secondes en VIP. Sois systématiquement le premier à voir les nouvelles annonces.</p>
         </div>
         <div class="feature-card">
             <div class="feature-icon">🔔</div>
-            <h3>Notifications instantanees</h3>
-            <p>Discord, Email et notifications navigateur. Tu ne rates plus aucune bonne affaire.</p>
+            <h3>Notifications multi-canal</h3>
+            <p>Discord, Telegram, Email et notifications navigateur en temps réel. Tu ne rates plus aucune bonne affaire, peu importe où tu es.</p>
         </div>
         <div class="feature-card" style="position:relative;">
-            <div style="position:absolute;top:14px;right:14px;background:rgba(127,90,240,0.25);border:1px solid rgba(127,90,240,0.5);color:#c9b6ff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;letter-spacing:.5px;">BIENTÔT</div>
+            <div class="feature-soon">BIENTÔT</div>
             <div class="feature-icon">🛒</div>
             <h3>Achat automatique</h3>
-            <p>Configure tes criteres et le bot achete automatiquement les articles qui matchent. En cours de deploiement.</p>
+            <p>Configure tes critères et le bot achète automatiquement les articles qui matchent. En cours de déploiement sur Pro et VIP.</p>
         </div>
         <div class="feature-card">
             <div class="feature-icon">📊</div>
             <h3>Dashboard complet</h3>
-            <p>Visualise tes stats, gere tes recherches et suis tes achats en temps reel depuis ton navigateur.</p>
+            <p>Visualise tes stats, gère tes recherches et suis tes alertes en temps réel depuis ton navigateur. Tout au même endroit.</p>
         </div>
         <div class="feature-card">
             <div class="feature-icon">🔍</div>
-            <h3>Filtres avances</h3>
-            <p>Marques, tailles, prix, categories... Configure des recherches ultra-precises pour maximiser tes profits.</p>
+            <h3>Filtres avancés</h3>
+            <p>Marques, tailles, prix min/max, catégories... Configure des recherches ultra-précises pour maximiser tes marges.</p>
         </div>
         <div class="feature-card">
             <div class="feature-icon">🔒</div>
-            <h3>Securise</h3>
-            <p>Tes donnees sont chiffrees. Ton compte Vinted est protege. Paiements securises via Stripe.</p>
+            <h3>Sécurisé</h3>
+            <p>Tes données sont chiffrées. Paiements sécurisés via Stripe. Infrastructure stable avec Railway et volumes persistants.</p>
         </div>
     </div>
 </section>
 
-<!-- HOW IT WORKS -->
+<div class="divider"></div>
+
+<!-- ── HOW IT WORKS ── -->
 <section class="section">
     <div class="section-title">
-        <h2>Comment ca marche ?</h2>
-        <p>3 etapes pour commencer a sniper les meilleures affaires</p>
+        <div class="section-label">Comment ça marche</div>
+        <h2>Setup en moins de 3 minutes</h2>
+        <p>3 étapes pour commencer à sniper les meilleures affaires</p>
     </div>
     <div class="steps">
         <div class="step">
             <div class="step-num">1</div>
-            <h3>Cree ton compte</h3>
-            <p>Inscription gratuite en 30 secondes. Pas de carte bancaire requise pour commencer.</p>
+            <h3>Crée ton compte</h3>
+            <p>Inscription gratuite en 30 secondes. Pas de carte bancaire requise pour le plan Starter.</p>
         </div>
         <div class="step">
             <div class="step-num">2</div>
             <h3>Configure tes recherches</h3>
-            <p>Ajoute tes mots-cles, marques, fourchettes de prix et connecte ton Discord.</p>
+            <p>Ajoute tes mots-clés, marques, fourchettes de prix. Connecte Discord ou Telegram en 1 clic.</p>
         </div>
         <div class="step">
             <div class="step-num">3</div>
-            <h3>Recois les alertes</h3>
-            <p>Le bot scanne Vinted en continu et t'alerte instantanement quand une affaire apparait.</p>
+            <h3>Reçois les alertes</h3>
+            <p>Le bot scanne Vinted en continu et t'alerte instantanément dès qu'une affaire apparaît.</p>
         </div>
     </div>
 </section>
 
-<!-- PRICING -->
+<div class="divider"></div>
+
+<!-- ── PRICING ── -->
 <section class="section" id="pricing">
     <div class="section-title">
-        <h2>Des tarifs simples et transparents</h2>
-        <p>Choisis le plan adapte a ton activite de resell</p>
+        <div class="section-label">Tarifs</div>
+        <h2>Simple et transparent</h2>
+        <p>Choisis le plan adapté à ton activité de resell</p>
     </div>
+
     <div class="pricing-grid">
+
         <!-- STARTER -->
         <div class="price-card">
             <h3>{{ plans.free.name }}</h3>
             <div class="plan-desc">{{ plans.free.description }}</div>
-            <div class="price-amount">{{ plans.free.price_monthly|int }} EUR<span>/mois</span></div>
+            <div class="price-amount">{{ plans.free.price_monthly|int }}<span style="font-size:20px;color:var(--text2);font-weight:600;">€</span></div>
+            <div class="price-period">par mois</div>
             <ul class="price-features">
-                <li>{{ plans.free.max_searches }} recherches actives</li>
-                <li>Scan toutes les {{ (plans.free.scan_interval / 60)|int }} min</li>
-                <li>Alertes Discord</li>
-                <li class="disabled">Alertes Email</li>
-                <li class="disabled">Achat automatique</li>
-                <li class="disabled">Alertes SMS</li>
+                <li><span class="check">✓</span> {{ plans.free.max_searches }} recherches actives</li>
+                <li><span class="check">✓</span> Scan toutes les {{ (plans.free.scan_interval / 60)|int }} min</li>
+                <li><span class="check">✓</span> Alertes Discord</li>
+                <li class="disabled"><span class="cross">✕</span> Alertes Email</li>
+                <li class="disabled"><span class="cross">✕</span> Alertes Telegram</li>
+                <li class="disabled"><span class="cross">✕</span> Achat automatique</li>
             </ul>
-            <a href="/register" class="btn btn-outline">Commencer</a>
+            <a href="/register" class="btn btn-outline">Commencer gratuitement</a>
         </div>
 
         <!-- BASIC -->
         <div class="price-card">
             <h3>{{ plans.basic.name }}</h3>
             <div class="plan-desc">{{ plans.basic.description }}</div>
-            <div class="price-amount">{{ plans.basic.price_monthly|int }} EUR<span>/mois</span></div>
+            <div class="price-amount">{{ plans.basic.price_monthly|int }}<span style="font-size:20px;color:var(--text2);font-weight:600;">€</span></div>
+            <div class="price-period">par mois</div>
             <ul class="price-features">
-                <li>{{ plans.basic.max_searches }} recherches actives</li>
-                <li>Scan toutes les {{ plans.basic.scan_interval }}s</li>
-                <li>Alertes Discord</li>
-                <li>Alertes Email</li>
-                <li class="disabled">Achat automatique</li>
-                <li class="disabled">Alertes SMS</li>
+                <li><span class="check">✓</span> {{ plans.basic.max_searches }} recherches actives</li>
+                <li><span class="check">✓</span> Scan toutes les {{ plans.basic.scan_interval }}s</li>
+                <li><span class="check">✓</span> Alertes Discord</li>
+                <li><span class="check">✓</span> Alertes Email</li>
+                <li class="disabled"><span class="cross">✕</span> Alertes Telegram</li>
+                <li class="disabled"><span class="cross">✕</span> Achat automatique</li>
             </ul>
-            <a href="/register?plan=basic" class="btn btn-primary">Choisir {{ plans.basic.name }}</a>
+            <a href="/register?plan=basic" class="btn btn-outline">Choisir {{ plans.basic.name }}</a>
         </div>
 
-        <!-- PRO -->
+        <!-- PRO (POPULAR) -->
         <div class="price-card popular">
+            <div class="popular-badge">POPULAIRE</div>
             <h3>{{ plans.pro.name }}</h3>
             <div class="plan-desc">{{ plans.pro.description }}</div>
-            <div class="price-amount">{{ plans.pro.price_monthly|int }} EUR<span>/mois</span></div>
+            <div class="price-amount gold-price">{{ plans.pro.price_monthly|int }}<span style="font-size:20px;color:var(--text2);font-weight:600;">€</span></div>
+            <div class="price-period">par mois</div>
             <ul class="price-features">
-                <li>{{ plans.pro.max_searches }} recherches actives</li>
-                <li>Scan toutes les {{ plans.pro.scan_interval }}s</li>
-                <li>Alertes Discord + Email</li>
-                <li>Notifications navigateur</li>
-                <li class="disabled">Achat automatique <span style="font-size:10px;color:#a78bfa;font-weight:700;">(bientôt)</span></li>
-                <li class="disabled">Alertes SMS <span style="font-size:10px;color:#a78bfa;font-weight:700;">(bientôt)</span></li>
+                <li><span class="check">✓</span> {{ plans.pro.max_searches }} recherches actives</li>
+                <li><span class="check">✓</span> Scan toutes les {{ plans.pro.scan_interval }}s</li>
+                <li><span class="check">✓</span> Discord + Email + Navigateur</li>
+                <li class="disabled"><span class="cross">✕</span> Alertes Telegram</li>
+                <li class="disabled"><span class="cross">✕</span> Achat automatique <span class="soon-tag">(bientôt)</span></li>
             </ul>
-            <a href="/register?plan=pro" class="btn btn-primary">Choisir {{ plans.pro.name }}</a>
+            <a href="/register?plan=pro" class="btn btn-gold">Choisir {{ plans.pro.name }}</a>
         </div>
 
         <!-- VIP -->
-        <div class="price-card">
+        <div class="price-card vip-card">
+            <div class="vip-badge">VIP</div>
             <h3>{{ plans.vip.name }}</h3>
             <div class="plan-desc">{{ plans.vip.description }}</div>
-            <div class="price-amount">{{ plans.vip.price_monthly|int }} EUR<span>/mois</span></div>
+            <div class="price-amount cyan-price">{{ plans.vip.price_monthly|int }}<span style="font-size:20px;color:var(--text2);font-weight:600;">€</span></div>
+            <div class="price-period">par mois</div>
             <ul class="price-features">
-                <li>{{ plans.vip.max_searches }} recherches actives</li>
-                <li>Scan toutes les {{ plans.vip.scan_interval }}s</li>
-                <li>Tous les canaux</li>
-                <li class="disabled">Alertes SMS <span style="font-size:10px;color:#a78bfa;font-weight:700;">(bientôt)</span></li>
-                <li class="disabled">Achat automatique <span style="font-size:10px;color:#a78bfa;font-weight:700;">(bientôt)</span></li>
-                <li>Support prioritaire</li>
+                <li><span class="check">✓</span> {{ plans.vip.max_searches }} recherches actives</li>
+                <li><span class="check">✓</span> Scan toutes les {{ plans.vip.scan_interval }}s 🔥</li>
+                <li><span class="check">✓</span> Discord + Telegram + Email + Navigateur</li>
+                <li><span class="check">✓</span> Support prioritaire</li>
+                <li class="disabled"><span class="cross">✕</span> Achat automatique <span class="soon-tag">(bientôt)</span></li>
             </ul>
-            <a href="/register?plan=vip" class="btn btn-primary">Choisir {{ plans.vip.name }}</a>
+            <a href="/register?plan=vip" class="btn btn-outline" style="border-color:rgba(0,200,224,.4);color:var(--cyan);">Choisir {{ plans.vip.name }}</a>
         </div>
+
     </div>
 </section>
 
-<!-- PROOF -->
+<div class="divider"></div>
+
+<!-- ── PROOF ── -->
 <section class="section">
     <div class="section-title">
-        <h2>Pourquoi les revendeurs l'utilisent</h2>
-        <p>Un workflow simple, rapide et orienté resultat.</p>
+        <div class="section-label">Pourquoi VintedSniper</div>
+        <h2>Fait pour les revendeurs sérieux</h2>
+        <p>Un workflow simple, rapide et orienté résultat</p>
     </div>
     <div class="proof-grid">
         <div class="proof-card">
+            <div class="proof-icon">⏱️</div>
             <strong>Gain de temps massif</strong>
-            <p>Tu arretes de rafraichir Vinted manuellement. Le bot surveille les annonces pour toi en continu.</p>
+            <p>Tu arrêtes de rafraîchir Vinted manuellement. Le bot surveille les annonces pour toi en continu, 24h/24.</p>
         </div>
         <div class="proof-card">
-            <strong>Execution en quelques minutes</strong>
-            <p>Inscription, recherche, alertes. Le setup est fait en quelques etapes depuis ton dashboard.</p>
+            <div class="proof-icon">🎯</div>
+            <strong>Exécution en quelques minutes</strong>
+            <p>Inscription, recherche, alertes. Le setup est fait en quelques étapes depuis ton dashboard — sans technique.</p>
         </div>
         <div class="proof-card">
+            <div class="proof-icon">📈</div>
             <strong>Plans adaptables</strong>
-            <p>Commence gratuitement, puis upgrade quand ton volume de recherches augmente.</p>
+            <p>Commence gratuitement, puis upgrade quand ton volume de recherches augmente. Pas d'engagement.</p>
         </div>
         <div class="proof-card">
+            <div class="proof-icon">🛡️</div>
             <strong>Stack fiable</strong>
-            <p>Interface web claire, notifications multi-canaux, et infrastructure orientee disponibilite.</p>
+            <p>Infrastructure Railway, base de données persistante, notifications multi-canaux. Disponibilité maximale.</p>
         </div>
     </div>
 </section>
 
-<!-- FAQ -->
+<div class="divider"></div>
+
+<!-- ── FAQ ── -->
 <section class="section" id="faq">
     <div class="section-title">
-        <h2>Questions frequentes</h2>
+        <div class="section-label">FAQ</div>
+        <h2>Questions fréquentes</h2>
     </div>
     <div class="faq-list">
         <div class="faq-item">
             <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
-                Est-ce que c'est legal ?
+                Est-ce que c'est légal ?
                 <span class="faq-arrow">&#9660;</span>
             </div>
-            <div class="faq-a">VintedSniper est un outil de surveillance qui consulte les annonces publiques de Vinted, comme le ferait un navigateur web. Nous ne contournons aucune mesure de securite.</div>
+            <div class="faq-a">VintedSniper est un outil de surveillance qui consulte les annonces publiques de Vinted, comme le ferait un navigateur web. Nous ne contournons aucune mesure de sécurité.</div>
         </div>
         <div class="faq-item">
             <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
                 Comment fonctionne l'achat automatique ?
                 <span class="faq-arrow">&#9660;</span>
             </div>
-            <div class="faq-a">L'achat automatique est en cours de deploiement et sera disponible prochainement sur les plans Pro et VIP. Tu seras notifie par email des sa mise en ligne.</div>
+            <div class="faq-a">L'achat automatique est en cours de déploiement et sera disponible prochainement sur les plans Pro et VIP. Tu seras notifié par email dès sa mise en ligne.</div>
         </div>
         <div class="faq-item">
             <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
-                Je peux annuler a tout moment ?
+                Je peux annuler à tout moment ?
                 <span class="faq-arrow">&#9660;</span>
             </div>
-            <div class="faq-a">Oui, tu peux annuler ton abonnement a tout moment depuis ton dashboard. Tu gardes l'acces jusqu'a la fin de la periode payee.</div>
+            <div class="faq-a">Oui, tu peux annuler ton abonnement à tout moment depuis ton dashboard. Tu gardes l'accès jusqu'à la fin de la période payée, sans frais supplémentaires.</div>
         </div>
         <div class="faq-item">
             <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
                 Quels moyens de paiement acceptez-vous ?
                 <span class="faq-arrow">&#9660;</span>
             </div>
-            <div class="faq-a">Nous acceptons les cartes bancaires (Visa, Mastercard, etc.) via Stripe. Tous les paiements sont securises et chiffres.</div>
+            <div class="faq-a">Nous acceptons les cartes bancaires (Visa, Mastercard, etc.) via Stripe. Tous les paiements sont sécurisés et chiffrés.</div>
         </div>
         <div class="faq-item">
             <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
-                Mon compte Vinted est-il en securite ?
+                Comment configurer Telegram ?
                 <span class="faq-arrow">&#9660;</span>
             </div>
-            <div class="faq-a">Tes informations sont stockees de maniere chiffree sur nos serveurs. Nous n'avons jamais acces a ton mot de passe Vinted en clair.</div>
+            <div class="faq-a">Sur le plan VIP, tu peux connecter Telegram en quelques secondes : envoie /start à @userinfobot pour obtenir ton Chat ID, puis colle-le dans ton dashboard. Tu recevras les alertes en moins d'une seconde.</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+                Mon compte Vinted est-il en sécurité ?
+                <span class="faq-arrow">&#9660;</span>
+            </div>
+            <div class="faq-a">Tes informations sont stockées de manière chiffrée sur nos serveurs. Nous n'avons jamais accès à ton mot de passe Vinted en clair.</div>
         </div>
     </div>
 </section>
 
-<!-- CTA -->
-<section class="section" style="text-align:center;">
-    <h2 style="font-size:32px; margin-bottom:16px;">Pret a lancer ton setup en moins de 3 minutes ?</h2>
-    <p style="color:var(--text2); margin-bottom:24px;">Cree ton compte, ajoute ta premiere recherche, et recois tes premieres alertes.</p>
-    <a href="/register" class="btn btn-primary" style="padding:16px 40px; font-size:16px;">Demarrer maintenant</a>
-</section>
+<!-- ── CTA ── -->
+<div class="container" style="padding-bottom:80px;">
+    <div class="cta-section">
+        <h2>Prêt à snipper <span class="grad-text">avant tout le monde</span> ?</h2>
+        <p>Crée ton compte, ajoute ta première recherche, et reçois tes premières alertes en moins de 3 minutes.</p>
+        <a href="/register" class="btn btn-gold btn-lg">Démarrer maintenant — c'est gratuit</a>
+    </div>
+</div>
 
-<!-- FOOTER -->
+<!-- ── FOOTER ── -->
 <footer>
-    <p>&copy; 2026 VintedSniper. Tous droits reserves. | <a href="#">Mentions legales</a> | <a href="#">CGV</a> | <a href="#">Contact</a></p>
+    <p>&copy; 2026 VintedSniper. Tous droits réservés. &nbsp;·&nbsp; <a href="#">Mentions légales</a> &nbsp;·&nbsp; <a href="#">CGV</a> &nbsp;·&nbsp; <a href="#">Contact</a></p>
 </footer>
 
 </body>

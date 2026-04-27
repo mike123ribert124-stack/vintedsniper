@@ -323,7 +323,7 @@ def reset_password(token, new_password):
 # ADMIN FUNCTIONS
 # ============================================
 def ensure_admin_columns():
-    """Ajoute la colonne is_admin si elle n'existe pas"""
+    """Ajoute les colonnes manquantes si elles n'existent pas"""
     conn = get_db()
     try:
         conn.execute("ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0")
@@ -332,6 +332,11 @@ def ensure_admin_columns():
         pass  # Colonne existe deja
     try:
         conn.execute("ALTER TABLE payments ADD COLUMN event_id TEXT")
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass  # Colonne existe deja
+    try:
+        conn.execute("ALTER TABLE users ADD COLUMN telegram_chat_id TEXT")
         conn.commit()
     except sqlite3.OperationalError:
         pass  # Colonne existe deja
@@ -386,7 +391,7 @@ def get_admin_overview():
 def get_all_users(search_query=None, plan_filter=None, status_filter=None, limit=100, offset=0):
     """Liste tous les utilisateurs pour l'admin"""
     conn = get_db()
-    query = "SELECT id, email, username, plan, is_active, created_at, last_login, stripe_customer_id, discord_webhook FROM users WHERE 1=1"
+    query = "SELECT id, email, username, plan, is_active, created_at, last_login, stripe_customer_id, discord_webhook, telegram_chat_id FROM users WHERE 1=1"
     params = []
 
     if search_query:

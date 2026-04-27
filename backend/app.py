@@ -336,6 +336,7 @@ def api_me():
             "plan": user["plan"],
             "plan_name": plan["name"],
             "discord_webhook": user.get("discord_webhook", ""),
+            "telegram_chat_id": user.get("telegram_chat_id", ""),
         },
         "plan": plan,
         "stats": stats,
@@ -352,6 +353,10 @@ def api_update_settings():
     if "discord_webhook" in data:
         db.execute("UPDATE users SET discord_webhook = ? WHERE id = ?",
                    (data["discord_webhook"], user["id"]))
+
+    if "telegram_chat_id" in data:
+        db.execute("UPDATE users SET telegram_chat_id = ? WHERE id = ?",
+                   (data["telegram_chat_id"], user["id"]))
 
     db.commit()
     db.close()
