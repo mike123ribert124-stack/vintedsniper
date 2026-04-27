@@ -23,6 +23,7 @@ from config import (
     CORS_ALLOWED_ORIGINS,
     ENVIRONMENT,
     ADMIN_EMAIL,
+    ADMIN_SECRET,
     RUN_SCANNER_IN_WEB
 )
 from database import (init_db, create_user, verify_user, get_user_by_api_key,
@@ -126,6 +127,17 @@ ensure_admin_columns()
 vinted = VintedEngine(max_workers=5)
 if ADMIN_EMAIL:
     make_admin(ADMIN_EMAIL)
+
+# ============================================
+# DEMARRAGE DU SCANNER (module-level)
+# Compatible Gunicorn : s'execute au chargement du module dans le worker
+# ============================================
+if RUN_SCANNER_IN_WEB:
+    _scanner_thread = threading.Thread(target=run_scanner, daemon=True, name="VintedScanner")
+    _scanner_thread.start()
+    logger.info("scanner_started=true")
+else:
+    logger.info("scanner_started=false (RUN_SCANNER_IN_WEB=0)")
 
 # Scanner en arriere-plan
 scanner_threads = {}
@@ -654,7 +666,17 @@ def pricing_page():
 def admin_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        # Check session
+        # 1. Verifier le token secret admin (2eme facteur)
+        if ADMIN_SECRET:
+            provided = (
+                request.headers.get("X-Admin-Secret") or
+                request.cookies.get("admin_secret") or
+                request.args.get("admin_secret")
+            )
+            if provided != ADMIN_SECRET:
+                return jsonify({"error": "Acces refuse"}), 403
+
+        # 2. Verifier la session
         user_id = session.get("user_id")
         if not user_id:
             return jsonify({"error": "Non authentifie"}), 401
@@ -667,7 +689,7 @@ def admin_required(f):
             return jsonify({"error": "Utilisateur introuvable"}), 401
 
         user = dict(user)
-        # Acces admin strict: flag is_admin uniquement
+        # 3. Verifier le flag is_admin
         if not user.get("is_admin"):
             return jsonify({"error": "Acces refuse - Admin uniquement"}), 403
 
@@ -683,7 +705,7 @@ def admin_required(f):
 def admin_page():
     if not session.get("user_id"):
         return redirect("/login")
-    # Verifier admin
+
     db = get_db()
     user = db.execute("SELECT * FROM users WHERE id = ?", (session["user_id"],)).fetchone()
     db.close()
@@ -692,7 +714,23 @@ def admin_page():
     user = dict(user)
     if not user.get("is_admin"):
         return redirect("/dashboard")
-    return render_template("admin.html")
+
+    # Verifier le secret admin si configure
+    if ADMIN_SECRET:
+        provided = request.args.get("s") or request.cookies.get("admin_secret")
+        if provided != ADMIN_SECRET:
+            return redirect("/dashboard")
+
+    # Stocker le secret dans un cookie HttpOnly pour les appels API suivants
+    resp = app.make_response(render_template("admin.html"))
+    if ADMIN_SECRET:
+        resp.set_cookie(
+            "admin_secret", ADMIN_SECRET,
+            httponly=True, samesite="Strict",
+            secure=(ENVIRONMENT == "production"),
+            max_age=3600  # 1 heure
+        )
+    return resp
 
 
 # ============================================
@@ -762,6 +800,44 @@ def api_admin_logs():
     return jsonify(result)
 
 
+@app.route("/api/admin/set-plan", methods=["POST"])
+@admin_required
+def api_admin_set_plan():
+    """
+    Permet a l'admin de changer le plan d'un utilisateur sans passer par Stripe.
+    Utile pour tester toutes les fonctionnalites en local ou en prod.
+    Body: { "user_id": int (optionnel, defaut = soi-meme), "plan": "free|basic|pro|vip" }
+    """
+    data = request.json or {}
+    plan = data.get("plan", "")
+    user_id = data.get("user_id") or request.user.get("id")
+
+    if plan not in PLANS:
+        return jsonify({"error": f"Plan invalide. Valeurs acceptees: {list(PLANS.keys())}"}), 400
+
+    db = get_db()
+    try:
+        db.execute(
+            "UPDATE users SET plan = ?, subscription_status = 'admin_override' WHERE id = ?",
+            (plan, user_id)
+        )
+        db.commit()
+        plan_info = PLANS[plan]
+        logger.info(f"admin_set_plan user_id={user_id} plan={plan}")
+        return jsonify({
+            "success": True,
+            "user_id": user_id,
+            "plan": plan,
+            "plan_name": plan_info["name"],
+            "scan_interval": plan_info["scan_interval"],
+            "max_searches": plan_info["max_searches"],
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        db.close()
+
+
 @app.route("/api/admin/make-admin", methods=["POST"])
 @admin_required
 def api_admin_make_admin():
@@ -784,8 +860,8 @@ def run_scanner():
     """
     Boucle de scan en arriere-plan pour tous les utilisateurs.
     Respecte l'intervalle de scan de chaque plan :
-    - VIP : scan continu (quasi-instantane)
-    - Pro : toutes les 10 secondes
+    - VIP : toutes les 1 seconde
+    - Pro : toutes les 5 secondes
     - Basic : toutes les 30 secondes
     - Free : toutes les 2 minutes
     """
@@ -848,9 +924,9 @@ def run_scanner():
                             # Notification multi-canal
                             notification_manager.notify_user(user, item, name)
 
-            # Boucle rapide pour ne pas rater les VIP
-            # On verifie toutes les 2 secondes s'il y a des utilisateurs a scanner
-            time.sleep(2)
+            # Boucle rapide pour ne pas rater les VIP (scan_interval=1s)
+            # 0.5s = on respecte bien les intervalles 1s VIP et 5s Pro
+            time.sleep(0.5)
 
         except Exception as e:
             print(f"[Scanner] Erreur: {e}")

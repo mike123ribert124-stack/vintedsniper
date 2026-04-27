@@ -106,6 +106,14 @@ SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
 BREVO_API_KEY = os.environ.get("BREVO_API_KEY", "")
 
 # ============================================
+# ADMIN SECRET (2eme facteur d'authentification admin)
+# Doit etre configure dans Railway. Sans ce token, les routes /admin/* sont bloquees
+# meme avec un compte admin valide. Generer avec :
+#   python3 -c "import secrets; print(secrets.token_hex(32))"
+# ============================================
+ADMIN_SECRET = os.environ.get("ADMIN_SECRET", "")
+
+# ============================================
 # TELEGRAM
 # ============================================
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
