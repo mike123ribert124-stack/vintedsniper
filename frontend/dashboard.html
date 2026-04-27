@@ -824,7 +824,14 @@ function startSSE() {
                     });
                 }
                 loadItems();
-                init();
+                // Refresh stats uniquement, sans re-render toute la page
+                api('/api/me').then(d => {
+                    if (d && d.stats) {
+                        document.getElementById('statItems').textContent = d.stats.total_items;
+                        document.getElementById('statToday').textContent = d.stats.items_today;
+                        document.getElementById('statNotifs').textContent = d.stats.notifications_sent;
+                    }
+                });
             }
         };
     } catch(e) {}

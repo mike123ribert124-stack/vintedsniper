@@ -340,6 +340,17 @@ def ensure_admin_columns():
         conn.commit()
     except sqlite3.OperationalError:
         pass  # Colonne existe deja
+    try:
+        # is_seeded : 0 = premier scan (pas de notifs), 1 = seede (notifs actives)
+        conn.execute("ALTER TABLE searches ADD COLUMN is_seeded INTEGER DEFAULT 0")
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass  # Colonne existe deja
+    try:
+        conn.execute("ALTER TABLE users ADD COLUMN subscription_status TEXT DEFAULT 'inactive'")
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass  # Colonne existe deja
     conn.execute(
         """CREATE TABLE IF NOT EXISTS webhook_events (
             id INTEGER PRIMARY KEY AUTOINCREMENT,

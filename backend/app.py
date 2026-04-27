@@ -894,6 +894,7 @@ def run_scanner():
                         "sort_order": s.get("sort_order", "newest_first"),
                         "is_active": True,
                         "_search_id": s["id"],
+                        "is_seeded": s.get("is_seeded", 0),
                     })
 
                 # Recherche batch multi-thread (vitesse adaptee au plan)
@@ -906,12 +907,30 @@ def run_scanner():
                 for config in search_configs:
                     name = config["name"]
                     items = results.get(name, [])
+                    search_id = config["_search_id"]
+                    is_seeded = config.get("is_seeded", 0)
 
+                    if not is_seeded:
+                        # Premier scan : on sauvegarde tous les articles existants
+                        # sans envoyer de notification (seeding)
+                        for item in items:
+                            save_found_item(user["id"], search_id, item)
+                        # Marquer la recherche comme seedee
+                        _db = get_db()
+                        _db.execute("UPDATE searches SET is_seeded = 1 WHERE id = ?", (search_id,))
+                        _db.commit()
+                        _db.close()
+                        print(f"[Scanner] Recherche '{name}' seedee ({len(items)} articles existants ignores)")
+                        continue
+
+                    # Scans suivants : notifier uniquement les vrais nouveaux articles
+                    # Limite a 5 notifications par scan pour eviter le flood
+                    notif_count = 0
                     for item in items:
-                        is_new = save_found_item(user["id"], config["_search_id"], item)
-                        if is_new:
-                            # Notification multi-canal
+                        is_new = save_found_item(user["id"], search_id, item)
+                        if is_new and notif_count < 5:
                             notification_manager.notify_user(user, item, name)
+                            notif_count += 1
 
             # Boucle rapide pour ne pas rater les VIP (scan_interval=1s)
             # 0.5s = on respecte bien les intervalles 1s VIP et 5s Pro
