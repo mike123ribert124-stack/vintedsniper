@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VintedSniper - Bot Vinted #1 pour le Resell</title>
+    <link rel="icon" type="image/svg+xml" href="/static/img/favicon.svg">
+    <link rel="icon" type="image/png" href="/static/img/logo.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
@@ -121,7 +123,9 @@
             display: flex; justify-content: space-between; align-items: center;
             padding: 16px 5%; max-width: 1180px; margin: 0 auto;
         }
-        .logo {
+        .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+        .logo img { height: 38px; width: auto; }
+        .logo span {
             font-size: 22px; font-weight: 900; letter-spacing: -.5px;
             background: linear-gradient(135deg, #fff 30%, var(--gold) 100%);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
@@ -398,7 +402,10 @@
 <!-- ── NAV ── -->
 <nav>
     <div class="nav-inner">
-        <div class="logo">⚡ VintedSniper</div>
+        <a href="/" class="logo">
+            <img src="/static/img/logo.png" alt="VintedSniper" onerror="this.style.display='none'">
+            <span>VintedSniper</span>
+        </a>
         <div class="nav-links">
             <a href="#features">Fonctionnalités</a>
             <a href="#pricing">Tarifs</a>

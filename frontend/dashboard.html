@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - VintedSniper</title>
+    <link rel="icon" type="image/svg+xml" href="/static/img/favicon.svg">
+    <link rel="icon" type="image/png" href="/static/img/logo.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
@@ -66,10 +68,14 @@
             z-index: 50;
         }
         .logo {
+            display: flex; align-items: center; gap: 8px;
+            padding: 0 6px; margin-bottom: 28px;
+        }
+        .logo img { height: 32px; width: auto; }
+        .logo span {
             font-size: 19px; font-weight: 900; letter-spacing: -.4px;
             background: linear-gradient(135deg, #fff 30%, var(--gold));
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            padding: 0 6px; margin-bottom: 28px;
         }
 
         .nav-group-label {
@@ -350,7 +356,10 @@
 
 <!-- ── SIDEBAR ── -->
 <div class="sidebar">
-    <div class="logo">⚡ VintedSniper</div>
+    <div class="logo">
+        <img src="/static/img/logo.png" alt="VintedSniper" onerror="this.style.display='none'">
+        <span>VintedSniper</span>
+    </div>
 
     <div class="nav-group-label">Navigation</div>
     <div class="nav-item active" onclick="showSection('overview')">

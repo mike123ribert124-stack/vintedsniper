@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="12" fill="#080810"/>
+  <!-- Outer ring -->
+  <circle cx="32" cy="32" r="27" fill="none" stroke="url(#g1)" stroke-width="3"/>
+  <!-- Crosshair lines -->
+  <line x1="32" y1="2" x2="32" y2="14" stroke="url(#g1)" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="32" y1="50" x2="32" y2="62" stroke="url(#g1)" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="2" y1="32" x2="14" y2="32" stroke="url(#g1)" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="50" y1="32" x2="62" y2="32" stroke="url(#g1)" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Inner ring -->
+  <circle cx="32" cy="32" r="18" fill="none" stroke="url(#g1)" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <!-- Lightning bolt -->
+  <path d="M36 14 L24 33 L31 33 L28 50 L40 31 L33 31 Z" fill="url(#g1)"/>
+  <defs>
+    <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f0c060"/>
+      <stop offset="100%" stop-color="#c8902a"/>
+    </linearGradient>
+  </defs>
+</svg>
