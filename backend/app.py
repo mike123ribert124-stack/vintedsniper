@@ -498,25 +498,6 @@ def healthz():
     return jsonify({"status": "ok", "service": APP_NAME})
 
 
-@app.route("/test-email")
-def test_email():
-    """Test email temporaire - a supprimer apres debug"""
-    from config import BREVO_API_KEY, SMTP_USER
-    import requests as req
-    out = {"brevo_key_set": bool(BREVO_API_KEY), "smtp_user": SMTP_USER}
-    try:
-        r = req.post("https://api.brevo.com/v3/smtp/email",
-            headers={"api-key": BREVO_API_KEY, "Content-Type": "application/json"},
-            json={"sender": {"name": "VintedSniper", "email": SMTP_USER},
-                  "to": [{"email": "mike123.ribert124@gmail.com"}],
-                  "subject": "Test VintedSniper", "htmlContent": "<p>Ca marche !</p>"},
-            timeout=15)
-        out["status"] = r.status_code
-        out["response"] = r.text[:200]
-    except Exception as e:
-        out["error"] = str(e)
-    return jsonify(out)
-
 
 
 @app.route("/readyz")
