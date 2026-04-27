@@ -70,7 +70,7 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
         });
         const data = await resp.json();
         if (data.success) {
-            window.location.href = '/dashboard';
+            window.location.href = '/pricing';
         } else {
             error.textContent = data.error || 'Erreur';
             error.style.display = 'block';

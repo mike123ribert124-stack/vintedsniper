@@ -181,7 +181,10 @@
         <div class="card">
             <h3 style="margin-bottom:16px">Mon plan</h3>
             <p style="font-size:14px">Plan actuel: <strong id="currentPlan">...</strong></p>
-            <button class="btn btn-primary" style="margin-top:12px" onclick="upgradePlan()">Changer de plan</button>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
+                <button class="btn btn-primary" onclick="upgradePlan()">Changer de plan</button>
+                <button class="btn" id="cancelSubBtn" style="background:rgba(255,95,115,0.1);border:1px solid rgba(255,95,115,0.3);color:#ff5f73;display:none" onclick="manageSubscription()">Gérer / Annuler</button>
+            </div>
         </div>
         <div class="card">
             <h3 style="margin-bottom:16px">Securite compte</h3>
@@ -350,6 +353,13 @@ async function loadItems() {
 function renderSettings() {
     document.getElementById('discordWebhook').value = userData.user.discord_webhook || '';
     document.getElementById('currentPlan').textContent = userData.user.plan_name;
+    // Afficher le bouton annulation si l'utilisateur a un plan payant
+    const cancelBtn = document.getElementById('cancelSubBtn');
+    if (userData.user.plan && userData.user.plan !== 'free') {
+        cancelBtn.style.display = 'inline-block';
+    } else {
+        cancelBtn.style.display = 'none';
+    }
 }
 
 function renderOnboardingChecklist() {
@@ -454,7 +464,25 @@ async function logout() {
 }
 
 function upgradePlan() {
-    window.location.href = '/#pricing';
+    window.location.href = '/pricing';
+}
+
+async function manageSubscription() {
+    const btn = document.getElementById('cancelSubBtn');
+    btn.disabled = true;
+    btn.textContent = 'Chargement...';
+    try {
+        const data = await api('/api/portal', { method: 'POST' });
+        if (data.url) {
+            window.location.href = data.url;
+        } else {
+            showToast(data.error || 'Erreur portail');
+        }
+    } catch(e) {
+        showToast('Erreur réseau');
+    }
+    btn.disabled = false;
+    btn.textContent = 'Gérer / Annuler';
 }
 
 // ==========================================

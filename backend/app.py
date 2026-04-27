@@ -516,6 +516,7 @@ def api_checkout():
     user = request.user
     data = request.json or {}
     plan_key = data.get("plan")
+    yearly = data.get("yearly", False)
 
     if plan_key not in PLANS or PLANS[plan_key]["price_monthly"] == 0:
         return jsonify({"error": "Plan invalide"}), 400
@@ -536,6 +537,7 @@ def api_checkout():
         plan_key,
         success_url=request.host_url + "dashboard?payment=success",
         cancel_url=request.host_url + "dashboard?payment=cancelled",
+        yearly=yearly,
     )
 
     if checkout_url:
@@ -612,6 +614,31 @@ def api_stripe_webhook():
             clear_user_subscription(user["id"])
 
     return jsonify({"success": True})
+
+
+@app.route("/api/portal", methods=["POST"])
+@login_required
+def api_portal():
+    """Redirige vers le portail Stripe pour gérer/annuler l'abonnement."""
+    user = request.user
+    customer_id = user.get("stripe_customer_id")
+    if not customer_id:
+        return jsonify({"error": "Aucun abonnement actif"}), 400
+
+    portal_url = payment_manager.create_portal_session(
+        customer_id,
+        return_url=request.host_url + "dashboard"
+    )
+    if portal_url:
+        return jsonify({"url": portal_url})
+    else:
+        return jsonify({"error": "Erreur portail Stripe"}), 500
+
+
+@app.route("/pricing")
+def pricing_page():
+    """Page de choix de plan après inscription."""
+    return render_template("pricing.html", plans=PLANS)
 
 
 # ============================================

@@ -43,7 +43,7 @@ class PaymentManager:
             print(f"[Stripe] Erreur creation client: {e}")
             return None
 
-    def create_checkout_session(self, customer_id, plan_key, success_url, cancel_url):
+    def create_checkout_session(self, customer_id, plan_key, success_url, cancel_url, yearly=False):
         """Cree une session de paiement Stripe Checkout"""
         if not stripe:
             return None
@@ -52,18 +52,21 @@ class PaymentManager:
         if not plan or plan.get("price_monthly", 0) == 0:
             return None
 
+        price_id_key = "stripe_yearly_price_id" if yearly else "stripe_price_id"
+        price_id = plan.get(price_id_key) or plan.get("stripe_price_id")
+
         try:
             session = stripe.checkout.Session.create(
                 customer=customer_id,
                 payment_method_types=["card"],
                 line_items=[{
-                    "price": plan.get("stripe_price_id"),
+                    "price": price_id,
                     "quantity": 1,
                 }],
                 mode="subscription",
                 success_url=success_url + "?session_id={CHECKOUT_SESSION_ID}",
                 cancel_url=cancel_url,
-                metadata={"plan": plan_key},
+                metadata={"plan": plan_key, "billing": "yearly" if yearly else "monthly"},
             )
             return session.url
         except Exception as e:

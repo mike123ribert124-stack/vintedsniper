@@ -33,6 +33,7 @@ PLANS = {
     "free": {
         "name": "Starter",
         "price_monthly": 0,
+        "price_yearly": 0,
         "max_searches": 2,
         "scan_interval": 120,       # 2 minutes
         "notifications": ["discord"],
@@ -43,34 +44,40 @@ PLANS = {
     "basic": {
         "name": "Basic",
         "price_monthly": 15,
+        "price_yearly": 144,        # 12€/mois = -20%
         "max_searches": 10,
         "scan_interval": 30,        # 30 secondes
         "notifications": ["discord", "email"],
         "auto_buy": False,
         "max_favorites": 50,
         "stripe_price_id": os.environ.get("STRIPE_BASIC_PRICE_ID", ""),
+        "stripe_yearly_price_id": os.environ.get("STRIPE_BASIC_YEARLY_PRICE_ID", ""),
         "description": "Pour les revendeurs serieux",
     },
     "pro": {
         "name": "Pro",
         "price_monthly": 50,
+        "price_yearly": 480,        # 40€/mois = -20%
         "max_searches": 30,
         "scan_interval": 10,        # 10 secondes
         "notifications": ["discord", "email", "browser"],
         "auto_buy": True,
         "max_favorites": 200,
         "stripe_price_id": os.environ.get("STRIPE_PRO_PRICE_ID", ""),
+        "stripe_yearly_price_id": os.environ.get("STRIPE_PRO_YEARLY_PRICE_ID", ""),
         "description": "Pour les pros du resell",
     },
     "vip": {
         "name": "VIP",
         "price_monthly": 90,
+        "price_yearly": 864,        # 72€/mois = -20%
         "max_searches": 100,
         "scan_interval": 5,         # 5 secondes
         "notifications": ["discord", "email", "sms", "browser"],
         "auto_buy": True,
         "max_favorites": -1,        # Illimite
         "stripe_price_id": os.environ.get("STRIPE_VIP_PRICE_ID", ""),
+        "stripe_yearly_price_id": os.environ.get("STRIPE_VIP_YEARLY_PRICE_ID", ""),
         "description": "Puissance maximale",
     },
 }
