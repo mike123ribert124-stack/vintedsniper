@@ -633,10 +633,10 @@ async function loadSearches() {
                 <div class="details">${s.keywords} &nbsp;·&nbsp; ${s.price_from}–${s.price_to} EUR &nbsp;·&nbsp; ${s.items_found} articles</div>
             </div>
             <div class="search-actions">
-                <button class="btn btn-sm ${s.is_active ? 'btn-outline' : 'btn-success'}" onclick="toggleSearch(${s.id})">
+                <button class="btn btn-sm ${s.is_active ? 'btn-outline' : 'btn-success'}" onclick="toggleSearch(${s.id}, this)">
                     ${s.is_active ? 'Pause' : 'Activer'}
                 </button>
-                <button class="btn btn-sm btn-danger" data-delete="${s.id}" onclick="deleteSearch(${s.id})">Suppr.</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteSearch(${s.id}, this)">Suppr.</button>
             </div>
         </div>
     `).join('');
@@ -752,25 +752,35 @@ document.getElementById('newSearchForm').addEventListener('submit', async (e) =>
     }
 });
 
-async function toggleSearch(id) {
-    await api(`/api/searches/${id}/toggle`, { method: 'POST' });
+async function toggleSearch(id, btnEl) {
+    if (btnEl) btnEl.disabled = true;
+    const data = await api(`/api/searches/${id}/toggle`, { method: 'POST' });
+    if (data.error) showToast(data.error, true);
     loadSearches();
 }
 
-async function deleteSearch(id) {
-    const btn = document.querySelector(`[data-delete="${id}"]`);
-    if (btn && btn.dataset.confirm !== 'true') {
-        btn.dataset.confirm = 'true';
-        btn.textContent = 'Confirmer ?';
-        btn.style.background = 'rgba(255,85,115,.4)';
+async function deleteSearch(id, btnEl) {
+    if (!btnEl._pendingDelete) {
+        btnEl._pendingDelete = true;
+        const orig = btnEl.textContent;
+        btnEl.textContent = 'Confirmer ?';
+        btnEl.style.background = 'rgba(255,85,115,.5)';
         setTimeout(() => {
-            if (btn) { btn.dataset.confirm = ''; btn.textContent = 'Suppr.'; btn.style.background = ''; }
+            btnEl._pendingDelete = false;
+            btnEl.textContent = orig;
+            btnEl.style.background = '';
         }, 3000);
         return;
     }
-    await api(`/api/searches/${id}`, { method: 'DELETE' });
-    showToast('Recherche supprimée');
-    loadSearches();
+    btnEl.disabled = true;
+    const data = await api(`/api/searches/${id}`, { method: 'DELETE' });
+    if (data.success !== false) {
+        showToast('Recherche supprimée');
+        loadSearches();
+    } else {
+        showToast(data.error || 'Erreur suppression', true);
+        btnEl.disabled = false;
+    }
 }
 
 async function saveSettings() {
