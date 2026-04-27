@@ -77,14 +77,82 @@ class VintedEngine:
             session_data["cookies_ok"] = False
             return False
 
+    def get_catalogs(self):
+        """Recupere les categories Vinted"""
+        session_data = self._get_session()
+        if not self._ensure_cookies(session_data):
+            return []
+        try:
+            resp = session_data["session"].get(f"{VINTED_API_URL}/catalogs", timeout=10)
+            resp.raise_for_status()
+            data = resp.json()
+            result = []
+            for cat in data.get("catalogs", []):
+                result.append({"id": cat.get("id"), "title": cat.get("title", ""), "parent_id": None})
+                for sub in cat.get("catalogs", []):
+                    result.append({"id": sub.get("id"), "title": sub.get("title", ""), "parent_id": cat.get("id"), "parent_title": cat.get("title", "")})
+                    for subsub in sub.get("catalogs", []):
+                        result.append({"id": subsub.get("id"), "title": subsub.get("title", ""), "parent_id": sub.get("id"), "parent_title": f"{cat.get('title','')} > {sub.get('title','')}"})
+            return result
+        except Exception as e:
+            print(f"[VintedEngine] Erreur catalogs: {e}")
+            return []
+
+    def search_brands(self, query="", per_page=25):
+        """Recherche les marques Vinted"""
+        session_data = self._get_session()
+        if not self._ensure_cookies(session_data):
+            return []
+        try:
+            params = {"per_page": per_page, "search_text": query}
+            resp = session_data["session"].get(f"{VINTED_API_URL}/brands", params=params, timeout=10)
+            resp.raise_for_status()
+            data = resp.json()
+            return [{"id": b.get("id"), "title": b.get("title", "")} for b in data.get("brands", [])]
+        except Exception as e:
+            print(f"[VintedEngine] Erreur brands: {e}")
+            return []
+
+    def get_sizes(self, catalog_id=None):
+        """Recupere les tailles disponibles, optionnellement pour une categorie"""
+        session_data = self._get_session()
+        if not self._ensure_cookies(session_data):
+            return []
+        try:
+            params = {}
+            if catalog_id:
+                params["catalog_id"] = catalog_id
+            resp = session_data["session"].get(f"{VINTED_API_URL}/sizes", params=params, timeout=10)
+            resp.raise_for_status()
+            data = resp.json()
+            sizes = data.get("sizes", [])
+            result = []
+            for group in sizes:
+                group_title = group.get("title", "")
+                for s in group.get("sizes", []):
+                    result.append({
+                        "id": s.get("id"),
+                        "title": s.get("title", ""),
+                        "group": group_title,
+                    })
+            return result
+        except Exception as e:
+            print(f"[VintedEngine] Erreur sizes: {e}")
+            return []
+
     def search(self, keywords="", catalog_ids=None, brand_ids=None,
                price_from=None, price_to=None, size_ids=None,
-               order="newest_first", per_page=20, plan="free"):
+               status_ids=None, order="newest_first", per_page=20, plan="free",
+               sort_order=None):
         """Recherche sur Vinted - vitesse adaptee au plan"""
         session_data = self._get_session()
 
         if not self._ensure_cookies(session_data):
             return []
+
+        # sort_order est un alias de order pour compat avec search_batch
+        if sort_order and not order:
+            order = sort_order
 
         params = {
             "page": 1,
@@ -104,6 +172,8 @@ class VintedEngine:
             params["price_to"] = price_to
         if size_ids:
             params["size_ids"] = ",".join(str(i) for i in size_ids)
+        if status_ids:
+            params["status_ids"] = ",".join(str(i) for i in status_ids)
 
         try:
             # Delai adapte au plan - VIP = 0 = instantane
@@ -166,6 +236,7 @@ class VintedEngine:
                     price_from=config.get("price_from"),
                     price_to=config.get("price_to"),
                     size_ids=config.get("size_ids"),
+                    status_ids=config.get("status_ids"),
                     order=config.get("sort_order", "newest_first"),
                     per_page=config.get("per_page", 20),
                     plan=plan,

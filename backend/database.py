@@ -207,15 +207,15 @@ def get_user_searches(user_id):
     return [dict(s) for s in searches]
 
 
-def create_search(user_id, name, keywords, price_from=0, price_to=50, brand_ids=None, catalog_ids=None, size_ids=None, sort_order="newest_first"):
+def create_search(user_id, name, keywords, price_from=0, price_to=50, brand_ids=None, catalog_ids=None, size_ids=None, status_ids=None, sort_order="newest_first"):
     """Cree une nouvelle recherche"""
     conn = get_db()
     conn.execute(
-        """INSERT INTO searches (user_id, name, keywords, price_from, price_to, brand_ids, catalog_ids, size_ids, sort_order)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        """INSERT INTO searches (user_id, name, keywords, price_from, price_to, brand_ids, catalog_ids, size_ids, status_ids, sort_order)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (user_id, name, keywords, price_from, price_to,
          json.dumps(brand_ids or []), json.dumps(catalog_ids or []),
-         json.dumps(size_ids or []), sort_order)
+         json.dumps(size_ids or []), json.dumps(status_ids or []), sort_order)
     )
     conn.commit()
     search_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
@@ -349,6 +349,11 @@ def ensure_admin_columns():
         pass  # Colonne existe deja
     try:
         conn.execute("ALTER TABLE users ADD COLUMN subscription_status TEXT DEFAULT 'inactive'")
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass  # Colonne existe deja
+    try:
+        conn.execute("ALTER TABLE searches ADD COLUMN status_ids TEXT DEFAULT '[]'")
         conn.commit()
     except sqlite3.OperationalError:
         pass  # Colonne existe deja

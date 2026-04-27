@@ -315,6 +315,41 @@
         }
         .modal h3 { font-size: 18px; font-weight: 800; margin-bottom: 22px; }
 
+        /* ── BRAND PICKER ── */
+        .brand-picker { position: relative; }
+        .brand-picker input { width: 100%; }
+        .brand-suggestions {
+            position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+            background: var(--bg3); border: 1px solid var(--line2); border-radius: 10px;
+            max-height: 180px; overflow-y: auto; z-index: 50; display: none;
+        }
+        .brand-suggestions.show { display: block; }
+        .brand-suggestion-item {
+            padding: 9px 14px; font-size: 13px; cursor: pointer; transition: background .15s;
+        }
+        .brand-suggestion-item:hover { background: var(--line); }
+        .selected-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+        .tag {
+            display: inline-flex; align-items: center; gap: 5px;
+            background: rgba(212,168,67,.15); border: 1px solid rgba(212,168,67,.4);
+            color: var(--gold); border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 600;
+        }
+        .tag button { background: none; border: none; color: inherit; cursor: pointer; font-size: 14px; line-height: 1; padding: 0; }
+
+        /* ── SIZE GRID ── */
+        .size-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+        .size-chip {
+            padding: 5px 11px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer;
+            background: var(--bg3); border: 1px solid var(--line2); color: var(--text2); transition: all .15s;
+        }
+        .size-chip.selected { background: rgba(212,168,67,.2); border-color: var(--gold); color: var(--gold); }
+
+        /* ── CONDITIONS ── */
+        .condition-grid { display: flex; flex-direction: column; gap: 6px; }
+        .cond-check { display: flex; align-items: center; gap: 9px; font-size: 13px; cursor: pointer; color: var(--text2); }
+        .cond-check input[type=checkbox] { accent-color: var(--gold); width: 15px; height: 15px; cursor: pointer; }
+        .cond-check:hover { color: var(--text); }
+
         /* ── TOAST ── */
         .toast {
             position: fixed; bottom: 24px; right: 24px;
@@ -530,35 +565,81 @@
 
 <!-- ── MODAL: Nouvelle recherche ── -->
 <div class="modal-overlay" id="searchModal">
-    <div class="modal">
+    <div class="modal" style="max-width:520px; max-height:90vh; overflow-y:auto;">
         <h3>✦ Nouvelle recherche</h3>
         <form id="newSearchForm">
+
+            <!-- Nom -->
             <div class="form-group">
                 <label>Nom de la recherche</label>
                 <input type="text" id="searchName" placeholder="Ex: Nike Air Force pas cher" required>
             </div>
+
+            <!-- Mots-clés -->
             <div class="form-group">
                 <label>Mots-clés</label>
-                <input type="text" id="searchKeywords" placeholder="Ex: nike air force" required>
+                <input type="text" id="searchKeywords" placeholder="Ex: nike air force">
             </div>
+
+            <!-- Marque -->
+            <div class="form-group">
+                <label>Marques</label>
+                <div class="brand-picker">
+                    <input type="text" id="brandSearch" placeholder="Rechercher une marque..." autocomplete="off">
+                    <div class="brand-suggestions" id="brandSuggestions"></div>
+                    <div class="selected-tags" id="selectedBrands"></div>
+                </div>
+            </div>
+
+            <!-- Catégorie -->
+            <div class="form-group">
+                <label>Catégorie</label>
+                <select id="searchCatalog" onchange="onCatalogChange(this.value)">
+                    <option value="">Toutes les catégories</option>
+                </select>
+            </div>
+
+            <!-- Taille -->
+            <div class="form-group" id="sizeGroup" style="display:none">
+                <label>Tailles</label>
+                <div class="size-grid" id="sizeGrid"></div>
+            </div>
+
+            <!-- État -->
+            <div class="form-group">
+                <label>État</label>
+                <div class="condition-grid">
+                    <label class="cond-check"><input type="checkbox" value="6"> Neuf avec étiquettes</label>
+                    <label class="cond-check"><input type="checkbox" value="1"> Neuf sans étiquettes</label>
+                    <label class="cond-check"><input type="checkbox" value="2"> Très bon état</label>
+                    <label class="cond-check"><input type="checkbox" value="3"> Bon état</label>
+                    <label class="cond-check"><input type="checkbox" value="4"> Satisfaisant</label>
+                </div>
+            </div>
+
+            <!-- Prix -->
             <div class="form-row">
                 <div class="form-group">
-                    <label>Prix min (EUR)</label>
+                    <label>Prix min (€)</label>
                     <input type="number" id="searchPriceFrom" value="0" min="0">
                 </div>
                 <div class="form-group">
-                    <label>Prix max (EUR)</label>
-                    <input type="number" id="searchPriceTo" value="20" min="0">
+                    <label>Prix max (€)</label>
+                    <input type="number" id="searchPriceTo" value="50" min="0">
                 </div>
             </div>
+
+            <!-- Tri -->
             <div class="form-group">
                 <label>Tri</label>
                 <select id="searchOrder">
                     <option value="newest_first">Plus récents d'abord</option>
                     <option value="price_low_to_high">Prix croissant</option>
+                    <option value="price_high_to_low">Prix décroissant</option>
                     <option value="relevance">Pertinence</option>
                 </select>
             </div>
+
             <div style="display:flex; gap:12px; margin-top:22px;">
                 <button type="submit" class="btn btn-gold" style="flex:1; padding:13px;">Créer la recherche</button>
                 <button type="button" class="btn btn-outline" onclick="closeModal()" style="flex:1; padding:13px;">Annuler</button>
@@ -772,22 +853,135 @@ function showSection(name, sourceEl = null) {
     }
 }
 
-function openNewSearch() {
+// ==========================================
+// MODAL RECHERCHE
+// ==========================================
+let selectedBrands = []; // [{id, title}]
+let selectedSizes  = []; // [id]
+let brandDebounce  = null;
+
+async function openNewSearch() {
+    selectedBrands = [];
+    selectedSizes  = [];
+    document.getElementById('newSearchForm').reset();
+    document.getElementById('selectedBrands').innerHTML = '';
+    document.getElementById('sizeGrid').innerHTML = '';
+    document.getElementById('sizeGroup').style.display = 'none';
+    document.getElementById('brandSuggestions').classList.remove('show');
+    document.querySelectorAll('.size-chip').forEach(c => c.classList.remove('selected'));
+    document.querySelectorAll('.cond-check input').forEach(c => c.checked = false);
+
+    // Charger les catégories si pas encore fait
+    const catSelect = document.getElementById('searchCatalog');
+    if (catSelect.options.length <= 1) {
+        catSelect.innerHTML = '<option value="">Chargement...</option>';
+        const d = await api('/api/vinted/catalogs');
+        catSelect.innerHTML = '<option value="">Toutes les catégories</option>';
+        (d.catalogs || []).forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.id;
+            const prefix = c.parent_title ? `${c.parent_title} > ` : (c.parent_id ? '  ' : '');
+            opt.textContent = prefix + c.title;
+            opt.style.paddingLeft = c.parent_id ? '16px' : '0';
+            catSelect.appendChild(opt);
+        });
+    }
     document.getElementById('searchModal').classList.add('show');
 }
+
 function closeModal() {
     document.getElementById('searchModal').classList.remove('show');
+    document.getElementById('brandSuggestions').classList.remove('show');
+}
+
+// Brand autocomplete
+document.getElementById('brandSearch').addEventListener('input', function() {
+    clearTimeout(brandDebounce);
+    const q = this.value.trim();
+    const box = document.getElementById('brandSuggestions');
+    if (!q) { box.classList.remove('show'); return; }
+    brandDebounce = setTimeout(async () => {
+        const d = await api(`/api/vinted/brands?q=${encodeURIComponent(q)}`);
+        const brands = (d.brands || []).filter(b => !selectedBrands.find(s => s.id === b.id));
+        if (!brands.length) { box.classList.remove('show'); return; }
+        box.innerHTML = brands.map(b =>
+            `<div class="brand-suggestion-item" data-id="${b.id}" data-title="${escHtml(b.title)}">${escHtml(b.title)}</div>`
+        ).join('');
+        box.classList.add('show');
+    }, 300);
+});
+
+document.getElementById('brandSuggestions').addEventListener('click', function(e) {
+    const item = e.target.closest('.brand-suggestion-item');
+    if (!item) return;
+    const id = parseInt(item.dataset.id);
+    const title = item.dataset.title;
+    if (!selectedBrands.find(b => b.id === id)) {
+        selectedBrands.push({ id, title });
+        renderBrandTags();
+    }
+    document.getElementById('brandSearch').value = '';
+    this.classList.remove('show');
+});
+
+function renderBrandTags() {
+    document.getElementById('selectedBrands').innerHTML = selectedBrands.map(b =>
+        `<span class="tag">${escHtml(b.title)}<button type="button" onclick="removeBrand(${b.id})">×</button></span>`
+    ).join('');
+}
+function removeBrand(id) {
+    selectedBrands = selectedBrands.filter(b => b.id !== id);
+    renderBrandTags();
+}
+
+// Fermer suggestions si clic dehors
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.brand-picker')) {
+        document.getElementById('brandSuggestions').classList.remove('show');
+    }
+});
+
+// Catalog → charger tailles
+async function onCatalogChange(catalogId) {
+    const sizeGroup = document.getElementById('sizeGroup');
+    const sizeGrid  = document.getElementById('sizeGrid');
+    selectedSizes = [];
+    if (!catalogId) { sizeGroup.style.display = 'none'; sizeGrid.innerHTML = ''; return; }
+    sizeGrid.innerHTML = '<span style="color:var(--text2);font-size:13px">Chargement...</span>';
+    sizeGroup.style.display = 'block';
+    const d = await api(`/api/vinted/sizes?catalog_id=${catalogId}`);
+    const sizes = d.sizes || [];
+    if (!sizes.length) { sizeGroup.style.display = 'none'; return; }
+    sizeGrid.innerHTML = sizes.map(s =>
+        `<span class="size-chip" data-id="${s.id}" onclick="toggleSize(this, ${s.id})">${escHtml(s.title)}</span>`
+    ).join('');
+}
+
+function toggleSize(el, id) {
+    if (selectedSizes.includes(id)) {
+        selectedSizes = selectedSizes.filter(s => s !== id);
+        el.classList.remove('selected');
+    } else {
+        selectedSizes.push(id);
+        el.classList.add('selected');
+    }
 }
 
 document.getElementById('newSearchForm').addEventListener('submit', async (e) => {
     e.preventDefault();
+    const statusIds = [...document.querySelectorAll('.cond-check input:checked')].map(c => parseInt(c.value));
+    const catalogId = document.getElementById('searchCatalog').value;
     const data = await api('/api/searches', {
         method: 'POST',
         body: JSON.stringify({
             name: document.getElementById('searchName').value,
             keywords: document.getElementById('searchKeywords').value,
-            price_from: parseFloat(document.getElementById('searchPriceFrom').value),
-            price_to: parseFloat(document.getElementById('searchPriceTo').value),
+            brand_ids: selectedBrands.map(b => b.id),
+            catalog_ids: catalogId ? [parseInt(catalogId)] : [],
+            size_ids: selectedSizes,
+            status_ids: statusIds,
+            price_from: parseFloat(document.getElementById('searchPriceFrom').value) || 0,
+            price_to: parseFloat(document.getElementById('searchPriceTo').value) || 0,
             sort_order: document.getElementById('searchOrder').value,
         })
     });
@@ -795,7 +989,6 @@ document.getElementById('newSearchForm').addEventListener('submit', async (e) =>
         closeModal();
         showToast('Recherche créée !');
         loadSearches();
-        document.getElementById('newSearchForm').reset();
     } else {
         showToast(data.error || 'Erreur', true);
     }

@@ -401,6 +401,7 @@ def api_create_search():
         brand_ids=data.get("brand_ids"),
         catalog_ids=data.get("catalog_ids"),
         size_ids=data.get("size_ids"),
+        status_ids=data.get("status_ids"),
         sort_order=data.get("sort_order", "newest_first"),
     )
 
@@ -441,6 +442,32 @@ def api_toggle_search(search_id):
 # ============================================
 # API RECHERCHE MANUELLE
 # ============================================
+@app.route("/api/vinted/catalogs")
+@login_required
+def api_vinted_catalogs():
+    """Recupere les categories Vinted"""
+    cats = vinted.get_catalogs()
+    return jsonify({"catalogs": cats})
+
+
+@app.route("/api/vinted/brands")
+@login_required
+def api_vinted_brands():
+    """Recherche les marques Vinted"""
+    q = request.args.get("q", "")
+    brands = vinted.search_brands(query=q)
+    return jsonify({"brands": brands})
+
+
+@app.route("/api/vinted/sizes")
+@login_required
+def api_vinted_sizes():
+    """Recupere les tailles Vinted"""
+    catalog_id = request.args.get("catalog_id", type=int)
+    sizes = vinted.get_sizes(catalog_id=catalog_id)
+    return jsonify({"sizes": sizes})
+
+
 @app.route("/api/search/test", methods=["POST"])
 @login_required
 def api_test_search():
@@ -900,9 +927,10 @@ def run_scanner():
                     search_configs.append({
                         "name": s["name"],
                         "keywords": s.get("keywords", ""),
-                        "brand_ids": json.loads(s.get("brand_ids", "[]")),
-                        "catalog_ids": json.loads(s.get("catalog_ids", "[]")),
-                        "size_ids": json.loads(s.get("size_ids", "[]")),
+                        "brand_ids": json.loads(s.get("brand_ids", "[]") or "[]"),
+                        "catalog_ids": json.loads(s.get("catalog_ids", "[]") or "[]"),
+                        "size_ids": json.loads(s.get("size_ids", "[]") or "[]"),
+                        "status_ids": json.loads(s.get("status_ids", "[]") or "[]"),
                         "price_from": s.get("price_from"),
                         "price_to": s.get("price_to"),
                         "sort_order": s.get("sort_order", "newest_first"),
