@@ -78,25 +78,48 @@ class VintedEngine:
             return False
 
     def get_catalogs(self):
-        """Recupere les categories Vinted"""
+        """Recupere les categories Vinted (essaie l'API, fallback sur categories hardcodees)"""
         session_data = self._get_session()
-        if not self._ensure_cookies(session_data):
-            return []
-        try:
-            resp = session_data["session"].get(f"{VINTED_API_URL}/catalogs", timeout=10)
-            resp.raise_for_status()
-            data = resp.json()
-            result = []
-            for cat in data.get("catalogs", []):
-                result.append({"id": cat.get("id"), "title": cat.get("title", ""), "parent_id": None})
-                for sub in cat.get("catalogs", []):
-                    result.append({"id": sub.get("id"), "title": sub.get("title", ""), "parent_id": cat.get("id"), "parent_title": cat.get("title", "")})
-                    for subsub in sub.get("catalogs", []):
-                        result.append({"id": subsub.get("id"), "title": subsub.get("title", ""), "parent_id": sub.get("id"), "parent_title": f"{cat.get('title','')} > {sub.get('title','')}"})
-            return result
-        except Exception as e:
-            print(f"[VintedEngine] Erreur catalogs: {e}")
-            return []
+        if self._ensure_cookies(session_data):
+            # Vinted utilise /catalog/categories (pas /catalogs)
+            for url in [f"{VINTED_API_URL}/catalog/categories", f"{VINTED_API_URL}/catalogs"]:
+                try:
+                    resp = session_data["session"].get(url, timeout=10)
+                    if resp.status_code != 200:
+                        continue
+                    data = resp.json()
+                    raw = data.get("catalogs", data.get("categories", []))
+                    if not raw:
+                        continue
+                    result = []
+                    for cat in raw:
+                        result.append({"id": cat.get("id"), "title": cat.get("title", ""), "parent_id": None})
+                        for sub in cat.get("catalogs", cat.get("categories", [])):
+                            result.append({"id": sub.get("id"), "title": sub.get("title", ""), "parent_id": cat.get("id"), "parent_title": cat.get("title", "")})
+                            for subsub in sub.get("catalogs", sub.get("categories", [])):
+                                result.append({"id": subsub.get("id"), "title": subsub.get("title", ""), "parent_id": sub.get("id"), "parent_title": f"{cat.get('title','')} > {sub.get('title','')}"})
+                    if result:
+                        return result
+                except Exception as e:
+                    print(f"[VintedEngine] Erreur catalogs ({url}): {e}")
+
+        # Fallback : categories populaires hardcodees (IDs Vinted FR)
+        return [
+            {"id": 4,    "title": "Hommes",                    "parent_id": None},
+            {"id": 15,   "title": "Vêtements",                 "parent_id": 4,   "parent_title": "Hommes"},
+            {"id": 116,  "title": "Chaussures",                "parent_id": 4,   "parent_title": "Hommes"},
+            {"id": 220,  "title": "Sacs & Accessoires",        "parent_id": 4,   "parent_title": "Hommes"},
+            {"id": 5,    "title": "Femmes",                    "parent_id": None},
+            {"id": 1904, "title": "Vêtements",                 "parent_id": 5,   "parent_title": "Femmes"},
+            {"id": 16,   "title": "Chaussures",                "parent_id": 5,   "parent_title": "Femmes"},
+            {"id": 54,   "title": "Sacs",                      "parent_id": 5,   "parent_title": "Femmes"},
+            {"id": 2,    "title": "Enfants",                   "parent_id": None},
+            {"id": 3,    "title": "Vêtements enfants",         "parent_id": 2,   "parent_title": "Enfants"},
+            {"id": 139,  "title": "Chaussures enfants",        "parent_id": 2,   "parent_title": "Enfants"},
+            {"id": 1231, "title": "Maison",                    "parent_id": None},
+            {"id": 2066, "title": "Informatique & Téléphonie", "parent_id": None},
+            {"id": 2050, "title": "Beauté & Bien-être",        "parent_id": None},
+        ]
 
     def search_brands(self, query="", per_page=25):
         """Recherche les marques Vinted"""
