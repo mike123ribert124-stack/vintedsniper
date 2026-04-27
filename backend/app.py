@@ -38,6 +38,7 @@ from database import (init_db, create_user, verify_user, get_user_by_api_key,
 from vinted_engine import VintedEngine
 from notifications import notification_manager
 from payments import payment_manager
+from auto_buyer import auto_buyer
 
 # ============================================
 # APP FLASK
@@ -878,6 +879,170 @@ def api_admin_make_admin():
 
 
 # ============================================
+# API AUTO-BUYER
+# ============================================
+@app.route("/api/autobuy/settings", methods=["GET"])
+@login_required
+def api_autobuy_settings():
+    """Recupere les parametres d'achat automatique de l'utilisateur"""
+    user = request.user
+    plan = PLANS.get(user.get("plan", "free"), PLANS["free"])
+
+    if not plan.get("auto_buy"):
+        return jsonify({"error": "L'achat automatique necessite le plan Pro ou VIP"}), 403
+
+    db = get_db()
+    settings = db.execute(
+        "SELECT autobuy_enabled, autobuy_max_price, autobuy_brands, autobuy_daily_limit, autobuy_mode FROM users WHERE id = ?",
+        (user["id"],)
+    ).fetchone()
+    db.close()
+
+    if settings:
+        settings = dict(settings)
+    else:
+        settings = {}
+
+    # Verifier le cookie Vinted
+    vinted_cookie = user.get("vinted_cookie", "")
+    cookie_valid = False
+    if vinted_cookie:
+        auth = auto_buyer.check_auth(user["id"], vinted_cookie)
+        cookie_valid = auth.get("valid", False)
+
+    return jsonify({
+        "enabled": bool(settings.get("autobuy_enabled", 0)),
+        "max_price": settings.get("autobuy_max_price", 0),
+        "brands": json.loads(settings.get("autobuy_brands", "[]") or "[]"),
+        "daily_limit": settings.get("autobuy_daily_limit", 5),
+        "mode": settings.get("autobuy_mode", "offer"),
+        "cookie_valid": cookie_valid,
+        "plan_allowed": True,
+    })
+
+
+@app.route("/api/autobuy/settings", methods=["PUT"])
+@login_required
+def api_update_autobuy_settings():
+    """Met a jour les parametres d'achat automatique"""
+    user = request.user
+    plan = PLANS.get(user.get("plan", "free"), PLANS["free"])
+
+    if not plan.get("auto_buy"):
+        return jsonify({"error": "L'achat automatique necessite le plan Pro ou VIP"}), 403
+
+    data = request.json or {}
+    db = get_db()
+
+    updates = []
+    params = []
+
+    if "enabled" in data:
+        updates.append("autobuy_enabled = ?")
+        params.append(1 if data["enabled"] else 0)
+    if "max_price" in data:
+        updates.append("autobuy_max_price = ?")
+        params.append(float(data["max_price"]))
+    if "brands" in data:
+        updates.append("autobuy_brands = ?")
+        params.append(json.dumps(data["brands"]))
+    if "daily_limit" in data:
+        updates.append("autobuy_daily_limit = ?")
+        params.append(int(data["daily_limit"]))
+    if "mode" in data:
+        mode = data["mode"]
+        if mode not in ("offer", "buy"):
+            return jsonify({"error": "Mode invalide (offer ou buy)"}), 400
+        updates.append("autobuy_mode = ?")
+        params.append(mode)
+
+    if updates:
+        params.append(user["id"])
+        db.execute(f"UPDATE users SET {', '.join(updates)} WHERE id = ?", params)
+        db.commit()
+    db.close()
+
+    return jsonify({"success": True})
+
+
+@app.route("/api/autobuy/cookie", methods=["PUT"])
+@login_required
+def api_update_vinted_cookie():
+    """Met a jour le cookie Vinted pour l'achat automatique"""
+    user = request.user
+    plan = PLANS.get(user.get("plan", "free"), PLANS["free"])
+
+    if not plan.get("auto_buy"):
+        return jsonify({"error": "L'achat automatique necessite le plan Pro ou VIP"}), 403
+
+    data = request.json or {}
+    cookie = data.get("cookie", "").strip()
+
+    if not cookie:
+        return jsonify({"error": "Cookie requis"}), 400
+
+    # Verifier que le cookie est valide
+    auth = auto_buyer.check_auth(user["id"], cookie)
+    if not auth.get("valid"):
+        return jsonify({"error": auth.get("error", "Cookie invalide")}), 400
+
+    db = get_db()
+    db.execute("UPDATE users SET vinted_cookie = ? WHERE id = ?", (cookie, user["id"]))
+    db.commit()
+    db.close()
+
+    return jsonify({
+        "success": True,
+        "vinted_username": auth.get("vinted_username", ""),
+        "balance": auth.get("balance", "0"),
+    })
+
+
+@app.route("/api/autobuy/buy", methods=["POST"])
+@login_required
+def api_manual_buy():
+    """Achat ou offre manuelle sur un article"""
+    user = request.user
+    plan = PLANS.get(user.get("plan", "free"), PLANS["free"])
+
+    if not plan.get("auto_buy"):
+        return jsonify({"error": "L'achat automatique necessite le plan Pro ou VIP"}), 403
+
+    vinted_cookie = user.get("vinted_cookie", "")
+    if not vinted_cookie:
+        return jsonify({"error": "Cookie Vinted non configure"}), 400
+
+    data = request.json or {}
+    item_id = data.get("item_id")
+    mode = data.get("mode", "offer")
+    offer_price = data.get("offer_price")
+
+    if not item_id:
+        return jsonify({"error": "item_id requis"}), 400
+
+    if mode == "offer":
+        if not offer_price:
+            return jsonify({"error": "offer_price requis pour une offre"}), 400
+        result = auto_buyer.send_offer(user["id"], vinted_cookie, item_id, float(offer_price))
+    elif mode == "buy":
+        result = auto_buyer.auto_buy(user["id"], vinted_cookie, item_id)
+    else:
+        return jsonify({"error": "Mode invalide (offer ou buy)"}), 400
+
+    return jsonify(result)
+
+
+@app.route("/api/autobuy/history")
+@login_required
+def api_autobuy_history():
+    """Historique des achats automatiques"""
+    user = request.user
+    limit = request.args.get("limit", 20, type=int)
+    history = auto_buyer.get_purchase_history(user["id"], limit)
+    return jsonify({"history": history})
+
+
+# ============================================
 # SCANNER EN ARRIERE-PLAN
 # ============================================
 # Suivi du dernier scan par utilisateur (protégé par lock)
@@ -974,6 +1139,27 @@ def run_scanner():
                         if is_new and notif_count < 5:
                             notification_manager.notify_user(user, item, name)
                             notif_count += 1
+
+                            # Auto-buy si active et plan le permet
+                            if plan.get("auto_buy") and user.get("autobuy_enabled") and user.get("vinted_cookie"):
+                                buy_rules = {
+                                    "enabled": True,
+                                    "max_price": user.get("autobuy_max_price", 0),
+                                    "brands": json.loads(user.get("autobuy_brands", "[]") or "[]"),
+                                    "daily_limit": user.get("autobuy_daily_limit", 5),
+                                    "user_id": user["id"],
+                                }
+                                if auto_buyer.should_auto_buy(item, buy_rules):
+                                    mode = user.get("autobuy_mode", "offer")
+                                    if mode == "buy":
+                                        result = auto_buyer.auto_buy(user["id"], user["vinted_cookie"], item["id"])
+                                    else:
+                                        offer_price = item.get("price", 0)
+                                        result = auto_buyer.send_offer(user["id"], user["vinted_cookie"], item["id"], offer_price)
+                                    if result.get("success"):
+                                        logger.info(f"autobuy user={user['id']} item={item['id']} mode={mode}")
+                                    else:
+                                        logger.warning(f"autobuy_fail user={user['id']} item={item['id']} error={result.get('error')}")
 
             # Boucle rapide pour ne pas rater les VIP (scan_interval=1s)
             # 0.5s = on respecte bien les intervalles 1s VIP et 5s Pro

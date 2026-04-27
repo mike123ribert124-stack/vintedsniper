@@ -357,8 +357,19 @@ def ensure_admin_columns():
         conn.commit()
     except sqlite3.OperationalError:
         pass  # Colonne existe deja
-    # webhook_events est deja cree dans init_db() — pas besoin de le recreer ici
-    conn.commit()
+    # Colonnes auto-buyer
+    for col in [
+        ("autobuy_enabled", "INTEGER DEFAULT 0"),
+        ("autobuy_max_price", "REAL DEFAULT 0"),
+        ("autobuy_brands", "TEXT DEFAULT '[]'"),
+        ("autobuy_daily_limit", "INTEGER DEFAULT 5"),
+        ("autobuy_mode", "TEXT DEFAULT 'offer'"),
+    ]:
+        try:
+            conn.execute(f"ALTER TABLE users ADD COLUMN {col[0]} {col[1]}")
+            conn.commit()
+        except sqlite3.OperationalError:
+            pass
     conn.close()
 
 
