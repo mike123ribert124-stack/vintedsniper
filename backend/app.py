@@ -500,24 +500,32 @@ def healthz():
 
 @app.route("/debug-smtp")
 def debug_smtp():
-    """Endpoint temporaire de diagnostic SMTP - a supprimer apres debug"""
-    import smtplib
-    from config import SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD
+    """Endpoint temporaire de diagnostic email - a supprimer apres debug"""
+    import requests as req
+    from config import BREVO_API_KEY, SMTP_USER
     result = {
-        "smtp_host": SMTP_HOST,
-        "smtp_port": SMTP_PORT,
+        "brevo_api_key_set": bool(BREVO_API_KEY),
+        "brevo_api_key_len": len(BREVO_API_KEY) if BREVO_API_KEY else 0,
         "smtp_user": SMTP_USER,
-        "smtp_password_set": bool(SMTP_PASSWORD),
-        "smtp_password_len": len(SMTP_PASSWORD) if SMTP_PASSWORD else 0,
     }
-    try:
-        s = smtplib.SMTP(SMTP_HOST, int(SMTP_PORT), timeout=10)
-        s.starttls()
-        s.login(SMTP_USER, SMTP_PASSWORD)
-        s.quit()
-        result["connection"] = "OK"
-    except Exception as e:
-        result["connection"] = f"ERREUR: {e}"
+    if BREVO_API_KEY:
+        try:
+            payload = {
+                "sender": {"name": "VintedSniper", "email": SMTP_USER or "a9722c001@smtp-brevo.com"},
+                "to": [{"email": "mike123.ribert124@gmail.com"}],
+                "subject": "Debug test VintedSniper",
+                "htmlContent": "<p>Test depuis Railway via Brevo API</p>"
+            }
+            resp = req.post(
+                "https://api.brevo.com/v3/smtp/email",
+                headers={"api-key": BREVO_API_KEY, "Content-Type": "application/json"},
+                json=payload,
+                timeout=15
+            )
+            result["brevo_status"] = resp.status_code
+            result["brevo_response"] = resp.text[:300]
+        except Exception as e:
+            result["brevo_error"] = str(e)
     return jsonify(result)
 
 
