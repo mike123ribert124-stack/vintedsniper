@@ -642,6 +642,40 @@ async function loadSearches() {
     `).join('');
 }
 
+async function deleteSearch(id, btnEl) {
+    btnEl.disabled = true;
+    btnEl.textContent = '...';
+    try {
+        const resp = await fetch(`/api/searches/${id}`, { method: 'DELETE' });
+        const data = await resp.json();
+        if (data.success) {
+            showToast('Recherche supprimée');
+            loadSearches();
+        } else {
+            showToast('Erreur: ' + (data.error || resp.status), true);
+            btnEl.disabled = false;
+            btnEl.textContent = 'Suppr.';
+        }
+    } catch(e) {
+        showToast('Erreur réseau: ' + e.message, true);
+        btnEl.disabled = false;
+        btnEl.textContent = 'Suppr.';
+    }
+}
+
+async function toggleSearch(id, btnEl) {
+    if (btnEl) btnEl.disabled = true;
+    try {
+        const resp = await fetch(`/api/searches/${id}/toggle`, { method: 'POST' });
+        const data = await resp.json();
+        if (data.error) showToast('Erreur: ' + data.error, true);
+        loadSearches();
+    } catch(e) {
+        showToast('Erreur réseau: ' + e.message, true);
+        if (btnEl) btnEl.disabled = false;
+    }
+}
+
 async function loadItems() {
     const data = await api('/api/items?limit=30');
     const items = data.items || [];
