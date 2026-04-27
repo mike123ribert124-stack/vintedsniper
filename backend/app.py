@@ -411,8 +411,15 @@ def api_create_search():
 @login_required
 def api_delete_search(search_id):
     db = get_db()
-    db.execute("DELETE FROM searches WHERE id = ? AND user_id = ?",
-               (search_id, request.user["id"]))
+    # Vérifier que la recherche appartient bien à l'utilisateur
+    search = db.execute("SELECT id FROM searches WHERE id = ? AND user_id = ?",
+                        (search_id, request.user["id"])).fetchone()
+    if not search:
+        db.close()
+        return jsonify({"error": "Recherche introuvable"}), 404
+    # Supprimer les articles trouvés liés (FK constraint)
+    db.execute("DELETE FROM found_items WHERE search_id = ?", (search_id,))
+    db.execute("DELETE FROM searches WHERE id = ?", (search_id,))
     db.commit()
     db.close()
     return jsonify({"success": True})
