@@ -498,6 +498,29 @@ def healthz():
     return jsonify({"status": "ok", "service": APP_NAME})
 
 
+@app.route("/debug-smtp")
+def debug_smtp():
+    """Endpoint temporaire de diagnostic SMTP - a supprimer apres debug"""
+    import smtplib
+    from config import SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD
+    result = {
+        "smtp_host": SMTP_HOST,
+        "smtp_port": SMTP_PORT,
+        "smtp_user": SMTP_USER,
+        "smtp_password_set": bool(SMTP_PASSWORD),
+        "smtp_password_len": len(SMTP_PASSWORD) if SMTP_PASSWORD else 0,
+    }
+    try:
+        s = smtplib.SMTP(SMTP_HOST, int(SMTP_PORT), timeout=10)
+        s.starttls()
+        s.login(SMTP_USER, SMTP_PASSWORD)
+        s.quit()
+        result["connection"] = "OK"
+    except Exception as e:
+        result["connection"] = f"ERREUR: {e}"
+    return jsonify(result)
+
+
 @app.route("/readyz")
 def readyz():
     try:
