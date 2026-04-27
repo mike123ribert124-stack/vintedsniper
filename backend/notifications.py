@@ -10,7 +10,7 @@ import threading
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from collections import defaultdict
-from config import SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, APP_NAME
+from config import SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, BREVO_API_KEY, APP_NAME
 
 
 class NotificationManager:
@@ -20,43 +20,37 @@ class NotificationManager:
         self._sse_clients = defaultdict(list)  # user_id -> [queue]
         self._lock = threading.Lock()
 
-    def _send_smtp_message(self, to_email, message):
+    def _send_brevo_email(self, to_email, subject, html_content):
         """
-        Envoie un message SMTP en essayant automatiquement les modes TLS/SSL.
-        Rend l'envoi plus robuste selon la configuration du provider.
+        Envoie un email via l'API HTTP Brevo.
+        Contourne les restrictions SMTP des hebergeurs cloud (Railway bloque le port 587).
         """
-        if not SMTP_USER or not SMTP_PASSWORD:
-            raise Exception("SMTP non configure (SMTP_USER/SMTP_PASSWORD manquants)")
+        if not BREVO_API_KEY:
+            raise Exception("BREVO_API_KEY non configuree")
 
-        host = SMTP_HOST
-        configured_port = int(SMTP_PORT)
+        sender_email = SMTP_USER or "noreply@vintedsniper.fr"
 
-        # Si le port est 465, on tente d'abord SSL.
-        # Sinon (587 en general), on tente d'abord STARTTLS.
-        if configured_port == 465:
-            candidates = [("ssl", 465), ("starttls", 587)]
-        else:
-            candidates = [("starttls", configured_port), ("ssl", 465)]
+        payload = {
+            "sender": {"name": APP_NAME, "email": sender_email},
+            "to": [{"email": to_email}],
+            "subject": subject,
+            "htmlContent": html_content
+        }
 
-        last_error = None
-        for mode, port in candidates:
-            try:
-                if mode == "ssl":
-                    with smtplib.SMTP_SSL(host, port, timeout=15) as server:
-                        server.login(SMTP_USER, SMTP_PASSWORD)
-                        server.sendmail(SMTP_USER, to_email, message.as_string())
-                else:
-                    with smtplib.SMTP(host, port, timeout=15) as server:
-                        server.ehlo()
-                        server.starttls()
-                        server.ehlo()
-                        server.login(SMTP_USER, SMTP_PASSWORD)
-                        server.sendmail(SMTP_USER, to_email, message.as_string())
-                return True
-            except Exception as e:
-                last_error = e
+        resp = requests.post(
+            "https://api.brevo.com/v3/smtp/email",
+            headers={
+                "api-key": BREVO_API_KEY,
+                "Content-Type": "application/json"
+            },
+            json=payload,
+            timeout=15
+        )
 
-        raise Exception(f"Envoi SMTP impossible ({host}). Derniere erreur: {last_error}")
+        if resp.status_code not in (200, 201):
+            raise Exception(f"Brevo API erreur {resp.status_code}: {resp.text}")
+
+        return True
 
     # ==========================================
     # DISCORD
@@ -118,17 +112,13 @@ class NotificationManager:
     # EMAIL
     # ==========================================
     def send_email(self, to_email, item, search_name=""):
-        """Envoie une alerte par email"""
-        if not SMTP_USER or not to_email:
+        """Envoie une alerte par email via Brevo API"""
+        if not BREVO_API_KEY or not to_email:
             return False
 
         try:
-            msg = MIMEMultipart("alternative")
-            msg["Subject"] = f"[{APP_NAME}] {item.get('title', 'Nouvel article')} - {item.get('price', '?')}EUR"
-            msg["From"] = f"{APP_NAME} <{SMTP_USER}>"
-            msg["To"] = to_email
-
             price = item.get("price", 0)
+            subject = f"[{APP_NAME}] {item.get('title', 'Nouvel article')} - {price:.2f} EUR"
             html = f"""
             <html>
             <body style="font-family: Arial, sans-serif; background: #1a1a2e; color: #fff; padding: 20px;">
@@ -148,11 +138,7 @@ class NotificationManager:
             </body>
             </html>
             """
-
-            msg.attach(MIMEText(html, "html"))
-
-            self._send_smtp_message(to_email, msg)
-
+            self._send_brevo_email(to_email, subject, html)
             return True
         except Exception as e:
             print(f"[Notif] Email erreur: {e}")
@@ -247,15 +233,11 @@ class NotificationManager:
     # EMAIL REINITIALISATION MOT DE PASSE
     # ==========================================
     def send_reset_email(self, to_email, username, reset_url):
-        """Envoie un email de reinitialisation de mot de passe"""
-        if not SMTP_USER or not to_email:
-            raise Exception("SMTP non configure")
+        """Envoie un email de reinitialisation de mot de passe via Brevo API"""
+        if not BREVO_API_KEY or not to_email:
+            raise Exception("BREVO_API_KEY non configuree")
 
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = f"[{APP_NAME}] Reinitialisation de ton mot de passe"
-        msg["From"] = f"{APP_NAME} <{SMTP_USER}>"
-        msg["To"] = to_email
-
+        subject = f"[{APP_NAME}] Reinitialisation de ton mot de passe"
         html = f"""
         <html>
         <body style="font-family: Arial, sans-serif; background: #1a1a2e; color: #fff; padding: 20px;">
@@ -278,10 +260,7 @@ class NotificationManager:
         </html>
         """
 
-        msg.attach(MIMEText(html, "html"))
-
-        self._send_smtp_message(to_email, msg)
-
+        self._send_brevo_email(to_email, subject, html)
         return True
 
 

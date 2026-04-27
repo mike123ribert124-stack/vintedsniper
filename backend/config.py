@@ -97,12 +97,13 @@ PAYPAL_CLIENT_SECRET = os.environ.get("PAYPAL_CLIENT_SECRET", "")
 PAYPAL_MODE = os.environ.get("PAYPAL_MODE", "sandbox")  # sandbox ou live
 
 # ============================================
-# EMAIL (SMTP)
+# EMAIL (Brevo API HTTP - contourne les restrictions SMTP de Railway)
 # ============================================
 SMTP_HOST = os.environ.get("SMTP_HOST", "smtp.gmail.com")
 SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
 SMTP_USER = os.environ.get("SMTP_USER", "")
 SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
+BREVO_API_KEY = os.environ.get("BREVO_API_KEY", "")
 
 # ============================================
 # VINTED
