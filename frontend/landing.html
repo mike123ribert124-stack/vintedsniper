@@ -182,12 +182,13 @@
         <div class="feature-card">
             <div class="feature-icon">🔔</div>
             <h3>Notifications instantanees</h3>
-            <p>Discord, Email, SMS et notifications navigateur. Tu ne rates plus aucune bonne affaire.</p>
+            <p>Discord, Email et notifications navigateur. Tu ne rates plus aucune bonne affaire.</p>
         </div>
-        <div class="feature-card">
+        <div class="feature-card" style="position:relative;">
+            <div style="position:absolute;top:14px;right:14px;background:rgba(127,90,240,0.25);border:1px solid rgba(127,90,240,0.5);color:#c9b6ff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;letter-spacing:.5px;">BIENTÔT</div>
             <div class="feature-icon">🛒</div>
             <h3>Achat automatique</h3>
-            <p>Configure tes criteres et le bot achete automatiquement les articles qui matchent. Zero delai.</p>
+            <p>Configure tes criteres et le bot achete automatiquement les articles qui matchent. En cours de deploiement.</p>
         </div>
         <div class="feature-card">
             <div class="feature-icon">📊</div>
@@ -202,7 +203,7 @@
         <div class="feature-card">
             <div class="feature-icon">🔒</div>
             <h3>Securise</h3>
-            <p>Tes donnees sont chiffrees. Ton compte Vinted est protege. Paiements securises via Stripe & PayPal.</p>
+            <p>Tes donnees sont chiffrees. Ton compte Vinted est protege. Paiements securises via Stripe.</p>
         </div>
     </div>
 </section>
@@ -281,8 +282,8 @@
                 <li>Scan toutes les {{ plans.pro.scan_interval }}s</li>
                 <li>Alertes Discord + Email</li>
                 <li>Notifications navigateur</li>
-                <li>Achat automatique</li>
-                <li class="disabled">Alertes SMS</li>
+                <li class="disabled">Achat automatique <span style="font-size:10px;color:#a78bfa;font-weight:700;">(bientôt)</span></li>
+                <li class="disabled">Alertes SMS <span style="font-size:10px;color:#a78bfa;font-weight:700;">(bientôt)</span></li>
             </ul>
             <a href="/register?plan=pro" class="btn btn-primary">Choisir {{ plans.pro.name }}</a>
         </div>
@@ -296,8 +297,8 @@
                 <li>{{ plans.vip.max_searches }} recherches actives</li>
                 <li>Scan toutes les {{ plans.vip.scan_interval }}s</li>
                 <li>Tous les canaux</li>
-                <li>Alertes SMS</li>
-                <li>Achat automatique</li>
+                <li class="disabled">Alertes SMS <span style="font-size:10px;color:#a78bfa;font-weight:700;">(bientôt)</span></li>
+                <li class="disabled">Achat automatique <span style="font-size:10px;color:#a78bfa;font-weight:700;">(bientôt)</span></li>
                 <li>Support prioritaire</li>
             </ul>
             <a href="/register?plan=vip" class="btn btn-primary">Choisir {{ plans.vip.name }}</a>
@@ -349,7 +350,7 @@
                 Comment fonctionne l'achat automatique ?
                 <span class="faq-arrow">&#9660;</span>
             </div>
-            <div class="faq-a">Tu configures tes criteres (marque, prix max, taille) et quand un article correspond, le bot envoie automatiquement une offre ou procede a l'achat. Tu gardes le controle total avec des limites de budget.</div>
+            <div class="faq-a">L'achat automatique est en cours de deploiement et sera disponible prochainement sur les plans Pro et VIP. Tu seras notifie par email des sa mise en ligne.</div>
         </div>
         <div class="faq-item">
             <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
@@ -363,7 +364,7 @@
                 Quels moyens de paiement acceptez-vous ?
                 <span class="faq-arrow">&#9660;</span>
             </div>
-            <div class="faq-a">Nous acceptons les cartes bancaires (Visa, Mastercard, etc.) via Stripe et PayPal. Tous les paiements sont securises et chiffres.</div>
+            <div class="faq-a">Nous acceptons les cartes bancaires (Visa, Mastercard, etc.) via Stripe. Tous les paiements sont securises et chiffres.</div>
         </div>
         <div class="faq-item">
             <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
