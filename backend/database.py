@@ -352,14 +352,7 @@ def ensure_admin_columns():
         conn.commit()
     except sqlite3.OperationalError:
         pass  # Colonne existe deja
-    conn.execute(
-        """CREATE TABLE IF NOT EXISTS webhook_events (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            provider TEXT NOT NULL,
-            event_id TEXT NOT NULL UNIQUE,
-            processed_at REAL DEFAULT (strftime('%s','now'))
-        )"""
-    )
+    # webhook_events est deja cree dans init_db() — pas besoin de le recreer ici
     conn.commit()
     conn.close()
 
@@ -422,18 +415,15 @@ def get_all_users(search_query=None, plan_filter=None, status_filter=None, limit
 
     users = conn.execute(query, params).fetchall()
     total = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
-    conn.close()
 
     result = []
     for u in users:
         u = dict(u)
-        # Ajouter les stats de chaque user
-        conn2 = get_db()
-        u["searches_count"] = conn2.execute("SELECT COUNT(*) FROM searches WHERE user_id = ?", (u["id"],)).fetchone()[0]
-        u["items_count"] = conn2.execute("SELECT COUNT(*) FROM found_items WHERE user_id = ?", (u["id"],)).fetchone()[0]
-        conn2.close()
+        u["searches_count"] = conn.execute("SELECT COUNT(*) FROM searches WHERE user_id = ?", (u["id"],)).fetchone()[0]
+        u["items_count"] = conn.execute("SELECT COUNT(*) FROM found_items WHERE user_id = ?", (u["id"],)).fetchone()[0]
         result.append(u)
 
+    conn.close()
     return {"users": result, "total": total}
 
 

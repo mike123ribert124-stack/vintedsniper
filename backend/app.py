@@ -445,14 +445,19 @@ def api_toggle_search(search_id):
 @login_required
 def api_test_search():
     data = request.json or {}
-    results = vinted.search(
-        keywords=data.get("keywords", ""),
-        brand_ids=data.get("brand_ids"),
-        price_from=data.get("price_from"),
-        price_to=data.get("price_to"),
-        per_page=10,
-    )
-    return jsonify({"items": results, "count": len(results)})
+    try:
+        results = vinted.search(
+            keywords=data.get("keywords", ""),
+            brand_ids=data.get("brand_ids"),
+            price_from=data.get("price_from"),
+            price_to=data.get("price_to"),
+            sort_order=data.get("sort_order", "newest_first"),
+            per_page=10,
+        )
+        return jsonify({"items": results, "count": len(results)})
+    except Exception as e:
+        logger.error(f"api_test_search_error={e}")
+        return jsonify({"error": "Erreur lors de la recherche", "items": [], "count": 0}), 500
 
 
 # ============================================
@@ -848,8 +853,9 @@ def api_admin_make_admin():
 # ============================================
 # SCANNER EN ARRIERE-PLAN
 # ============================================
-# Suivi du dernier scan par utilisateur
+# Suivi du dernier scan par utilisateur (protégé par lock)
 last_scan_time = {}  # {user_id: timestamp}
+_scan_lock = threading.Lock()
 
 
 def run_scanner():
@@ -877,7 +883,8 @@ def run_scanner():
 
                 # Verifier si c'est le moment de scanner cet utilisateur
                 now = time.time()
-                last_scan = last_scan_time.get(user["id"], 0)
+                with _scan_lock:
+                    last_scan = last_scan_time.get(user["id"], 0)
                 if (now - last_scan) < scan_interval:
                     continue  # Pas encore le moment pour cet utilisateur
 
@@ -908,7 +915,8 @@ def run_scanner():
                 results = vinted.search_batch(search_configs, plan=user_plan)
 
                 # Marquer le scan comme effectue
-                last_scan_time[user["id"]] = time.time()
+                with _scan_lock:
+                    last_scan_time[user["id"]] = time.time()
 
                 # Traiter les resultats
                 for config in search_configs:
@@ -964,22 +972,12 @@ else:
 # DEMARRAGE
 # ============================================
 def start_app():
-    """Demarre l'application et le scanner"""
-    # Lancer le scanner en arriere-plan
-    if RUN_SCANNER_IN_WEB:
-        scanner = threading.Thread(target=run_scanner, daemon=True)
-        scanner.start()
-        logger.info("scanner_started_in_web=true")
-    else:
-        logger.info("scanner_started_in_web=false")
-
-    # Lancer Flask
+    """Demarre l'application (dev local uniquement - Gunicorn gère le démarrage en production)"""
     port = int(os.environ.get("PORT", 5000))
     print(f"\n{'='*50}")
     print(f"  {APP_NAME} v2.0")
     print(f"  http://localhost:{port}")
     print(f"{'='*50}\n")
-
     app.run(host="0.0.0.0", port=port, debug=False)
 
 

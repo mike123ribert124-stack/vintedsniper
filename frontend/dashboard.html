@@ -570,12 +570,18 @@ let userData = null;
 // ==========================================
 // API
 // ==========================================
+function escHtml(str) {
+    return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 async function api(url, opts = {}) {
     const resp = await fetch(url, {
         headers: { 'Content-Type': 'application/json', ...opts.headers },
         ...opts,
     });
-    return resp.json();
+    if (!resp.ok && resp.status === 401) { window.location.href = '/login'; return {}; }
+    const text = await resp.text();
+    try { return JSON.parse(text); } catch(e) { return { error: 'Réponse serveur invalide' }; }
 }
 
 // ==========================================
@@ -628,9 +634,9 @@ async function loadSearches() {
             <div class="search-info">
                 <div class="name">
                     <span class="status-dot ${s.is_active ? 'active' : 'paused'}"></span>
-                    ${s.name}
+                    ${escHtml(s.name)}
                 </div>
-                <div class="details">${s.keywords} &nbsp;·&nbsp; ${s.price_from}–${s.price_to} EUR &nbsp;·&nbsp; ${s.items_found} articles</div>
+                <div class="details">${escHtml(s.keywords)} &nbsp;·&nbsp; ${escHtml(s.price_from)}–${escHtml(s.price_to)} EUR &nbsp;·&nbsp; ${escHtml(s.items_found)} articles</div>
             </div>
             <div class="search-actions">
                 <button class="btn btn-sm ${s.is_active ? 'btn-outline' : 'btn-success'}" onclick="toggleSearch(${s.id}, this)">
@@ -688,13 +694,13 @@ async function loadItems() {
         }
         container.innerHTML = list.map(i => `
             <div class="item-row">
-                ${i.photo_url ? `<img class="item-img" src="${i.photo_url}" alt="">` : '<div class="item-img"></div>'}
+                ${i.photo_url ? `<img class="item-img" src="${escHtml(i.photo_url)}" alt="">` : '<div class="item-img"></div>'}
                 <div class="item-info">
-                    <div class="title">${i.title}</div>
-                    <div class="meta">${i.brand || ''} ${i.size ? '· ' + i.size : ''} · ${i.seller || ''} · ${i.search_name || ''}</div>
+                    <div class="title">${escHtml(i.title)}</div>
+                    <div class="meta">${escHtml(i.brand || '')} ${i.size ? '· ' + escHtml(i.size) : ''} · ${escHtml(i.seller || '')} · ${escHtml(i.search_name || '')}</div>
                 </div>
-                <div class="item-price">${parseFloat(i.price).toFixed(2)} €</div>
-                <a class="item-link" href="${i.url}" target="_blank">Voir ↗</a>
+                <div class="item-price">${i.price != null ? parseFloat(i.price).toFixed(2) : '?'} €</div>
+                <a class="item-link" href="${escHtml(i.url)}" target="_blank" rel="noopener">Voir ↗</a>
             </div>
         `).join('');
     };
@@ -786,40 +792,6 @@ document.getElementById('newSearchForm').addEventListener('submit', async (e) =>
     }
 });
 
-async function toggleSearch(id, btnEl) {
-    if (btnEl) btnEl.disabled = true;
-    try {
-        const resp = await fetch(`/api/searches/${id}/toggle`, { method: 'POST' });
-        const data = await resp.json();
-        if (data.error) showToast('Erreur: ' + data.error, true);
-        loadSearches();
-    } catch(e) {
-        showToast('Erreur réseau: ' + e.message, true);
-        if (btnEl) btnEl.disabled = false;
-    }
-}
-
-async function deleteSearch(id, btnEl) {
-    btnEl.disabled = true;
-    btnEl.textContent = '...';
-    try {
-        const resp = await fetch(`/api/searches/${id}`, { method: 'DELETE' });
-        const data = await resp.json();
-        if (data.success) {
-            showToast('Recherche supprimée');
-            loadSearches();
-        } else {
-            showToast('Erreur: ' + (data.error || resp.status), true);
-            btnEl.disabled = false;
-            btnEl.textContent = 'Suppr.';
-        }
-    } catch(e) {
-        showToast('Erreur réseau: ' + e.message, true);
-        btnEl.disabled = false;
-        btnEl.textContent = 'Suppr.';
-    }
-}
-
 async function saveSettings() {
     const webhook = document.getElementById('discordWebhook').value;
     const telegramId = document.getElementById('telegramChatId').value;
@@ -867,20 +839,22 @@ async function manageSubscription() {
 // SSE
 // ==========================================
 function startSSE() {
-    try {
-        const es = new EventSource('/api/events');
+    let es;
+    function connect() {
+        es = new EventSource('/api/events');
         es.onmessage = (e) => {
-            const data = JSON.parse(e.data);
-            if (data.type === 'new_item') {
-                showToast(`Nouvel article: ${data.item.title} - ${data.item.price}€`);
+            let data;
+            try { data = JSON.parse(e.data); } catch(_) { return; }
+            if (data.type === 'new_item' && data.item) {
+                const item = data.item;
+                showToast(`Nouvel article: ${escHtml(item.title)} - ${item.price}€`);
                 if (Notification.permission === 'granted') {
                     new Notification('VintedSniper', {
-                        body: `${data.item.title} - ${data.item.price}€`,
-                        icon: data.item.photo || '',
+                        body: `${item.title} - ${item.price}€`,
+                        icon: item.photo_url || '',
                     });
                 }
                 loadItems();
-                // Refresh stats uniquement, sans re-render toute la page
                 api('/api/me').then(d => {
                     if (d && d.stats) {
                         document.getElementById('statItems').textContent = d.stats.total_items;
@@ -890,7 +864,12 @@ function startSSE() {
                 });
             }
         };
-    } catch(e) {}
+        es.onerror = () => {
+            es.close();
+            setTimeout(connect, 5000); // Reconnexion auto après 5s
+        };
+    }
+    connect();
 
     if ('Notification' in window && Notification.permission === 'default') {
         Notification.requestPermission();
