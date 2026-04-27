@@ -498,36 +498,6 @@ def healthz():
     return jsonify({"status": "ok", "service": APP_NAME})
 
 
-@app.route("/debug-smtp")
-def debug_smtp():
-    """Endpoint temporaire de diagnostic email - a supprimer apres debug"""
-    import requests as req
-    from config import BREVO_API_KEY, SMTP_USER
-    result = {
-        "brevo_api_key_set": bool(BREVO_API_KEY),
-        "brevo_api_key_len": len(BREVO_API_KEY) if BREVO_API_KEY else 0,
-        "smtp_user": SMTP_USER,
-    }
-    if BREVO_API_KEY:
-        try:
-            payload = {
-                "sender": {"name": "VintedSniper", "email": SMTP_USER or "a9722c001@smtp-brevo.com"},
-                "to": [{"email": "mike123.ribert124@gmail.com"}],
-                "subject": "Debug test VintedSniper",
-                "htmlContent": "<p>Test depuis Railway via Brevo API</p>"
-            }
-            resp = req.post(
-                "https://api.brevo.com/v3/smtp/email",
-                headers={"api-key": BREVO_API_KEY, "Content-Type": "application/json"},
-                json=payload,
-                timeout=15
-            )
-            result["brevo_status"] = resp.status_code
-            result["brevo_response"] = resp.text[:300]
-        except Exception as e:
-            result["brevo_error"] = str(e)
-    return jsonify(result)
-
 
 @app.route("/readyz")
 def readyz():
