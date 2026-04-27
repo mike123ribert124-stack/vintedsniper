@@ -754,32 +754,35 @@ document.getElementById('newSearchForm').addEventListener('submit', async (e) =>
 
 async function toggleSearch(id, btnEl) {
     if (btnEl) btnEl.disabled = true;
-    const data = await api(`/api/searches/${id}/toggle`, { method: 'POST' });
-    if (data.error) showToast(data.error, true);
-    loadSearches();
+    try {
+        const resp = await fetch(`/api/searches/${id}/toggle`, { method: 'POST' });
+        const data = await resp.json();
+        if (data.error) showToast('Erreur: ' + data.error, true);
+        loadSearches();
+    } catch(e) {
+        showToast('Erreur réseau: ' + e.message, true);
+        if (btnEl) btnEl.disabled = false;
+    }
 }
 
 async function deleteSearch(id, btnEl) {
-    if (!btnEl._pendingDelete) {
-        btnEl._pendingDelete = true;
-        const orig = btnEl.textContent;
-        btnEl.textContent = 'Confirmer ?';
-        btnEl.style.background = 'rgba(255,85,115,.5)';
-        setTimeout(() => {
-            btnEl._pendingDelete = false;
-            btnEl.textContent = orig;
-            btnEl.style.background = '';
-        }, 3000);
-        return;
-    }
     btnEl.disabled = true;
-    const data = await api(`/api/searches/${id}`, { method: 'DELETE' });
-    if (data.success !== false) {
-        showToast('Recherche supprimée');
-        loadSearches();
-    } else {
-        showToast(data.error || 'Erreur suppression', true);
+    btnEl.textContent = '...';
+    try {
+        const resp = await fetch(`/api/searches/${id}`, { method: 'DELETE' });
+        const data = await resp.json();
+        if (data.success) {
+            showToast('Recherche supprimée');
+            loadSearches();
+        } else {
+            showToast('Erreur: ' + (data.error || resp.status), true);
+            btnEl.disabled = false;
+            btnEl.textContent = 'Suppr.';
+        }
+    } catch(e) {
+        showToast('Erreur réseau: ' + e.message, true);
         btnEl.disabled = false;
+        btnEl.textContent = 'Suppr.';
     }
 }
 
