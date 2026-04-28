@@ -25,8 +25,6 @@ class VintedEngine:
         self.max_workers = max_workers
         self._sessions = {}
         self._session_lock = threading.Lock()
-        self._cookie_refresh_interval = 300  # 5 minutes
-        self._last_cookie_refresh = 0
 
     def _get_session(self, thread_id=None):
         """Recupere ou cree une session HTTP par thread"""

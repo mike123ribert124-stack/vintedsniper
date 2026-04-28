@@ -39,6 +39,7 @@ from vinted_engine import VintedEngine
 from notifications import notification_manager
 from payments import payment_manager
 from auto_buyer import auto_buyer
+from maintenance import start_maintenance_thread
 
 # ============================================
 # APP FLASK
@@ -1045,6 +1046,174 @@ def api_autobuy_history():
 
 
 # ============================================
+# BOT D'ASSISTANCE (plans payants uniquement)
+# ============================================
+SUPPORT_FAQ = [
+    {
+        "q": "C'est quoi VintedSniper ?",
+        "a": "VintedSniper est un bot qui scanne Vinted en continu pour trouver les meilleures affaires selon tes criteres (mots-cles, marques, prix, taille). Tu recois des alertes instantanees sur Discord, Telegram ou dans ton navigateur.",
+        "keywords": ["quoi", "c'est quoi", "comment ca marche", "fonctionnement", "explication"]
+    },
+    {
+        "q": "Comment creer une recherche ?",
+        "a": "Va dans l'onglet 'Recherches' de ton dashboard, clique sur '+ Nouvelle recherche'. Remplis les mots-cles, le budget min/max, les marques et tailles souhaitees. Le bot commencera a scanner immediatement.",
+        "keywords": ["recherche", "creer", "ajouter", "nouvelle", "comment"]
+    },
+    {
+        "q": "Comment configurer les notifications Discord ?",
+        "a": "Dans Parametres, colle ton URL de webhook Discord. Pour obtenir un webhook : Serveur Discord > Parametres > Integrations > Webhooks > Nouveau webhook > Copier l'URL.",
+        "keywords": ["discord", "webhook", "notification", "configurer", "alertes"]
+    },
+    {
+        "q": "Comment configurer Telegram ?",
+        "a": "1) Ouvre Telegram et cherche @userinfobot. 2) Envoie /start pour obtenir ton Chat ID. 3) Colle ce numero dans Parametres > Telegram Chat ID. 4) Cherche aussi @VintedSniperBot et envoie /start pour activer les alertes.",
+        "keywords": ["telegram", "chat id", "configurer", "bot telegram"]
+    },
+    {
+        "q": "Comment fonctionne l'achat automatique ?",
+        "a": "L'achat auto (Pro/VIP) envoie automatiquement une offre ou achete directement quand un article correspond a tes criteres. Configure ton cookie Vinted dans l'onglet 'Achat auto', choisis le mode (offre ou achat direct), et definis un prix max.",
+        "keywords": ["achat", "automatique", "auto", "acheter", "offre", "snipe"]
+    },
+    {
+        "q": "Mon cookie Vinted ne marche pas",
+        "a": "Le cookie Vinted expire regulierement (environ toutes les 24h). Reconnecte-toi sur vinted.fr, ouvre les outils dev (F12) > Application > Cookies > copie la valeur de '_vinted_fr_session' et colle-la a nouveau.",
+        "keywords": ["cookie", "expire", "invalide", "marche pas", "erreur"]
+    },
+    {
+        "q": "Je ne recois pas de notifications",
+        "a": "Verifie que : 1) Ta recherche est bien active (point vert). 2) Ton webhook Discord ou Chat ID Telegram est correct. 3) Ton plan inclut le canal souhaite. 4) Le bot a besoin d'un premier scan (seeding) avant d'envoyer des alertes.",
+        "keywords": ["notification", "recois pas", "alerte", "rien", "pas de notif"]
+    },
+    {
+        "q": "Comment changer mon plan ?",
+        "a": "Va dans Parametres > Mon plan > 'Changer de plan'. Tu seras redirige vers la page de tarifs. Le changement est immediat apres paiement via Stripe.",
+        "keywords": ["plan", "changer", "upgrade", "abonnement", "payer"]
+    },
+    {
+        "q": "Comment annuler mon abonnement ?",
+        "a": "Va dans Parametres > Mon plan > 'Gerer / Annuler'. Tu seras redirige vers le portail Stripe ou tu peux annuler. Ton plan reste actif jusqu'a la fin de la periode payee.",
+        "keywords": ["annuler", "resilier", "abonnement", "arreter"]
+    },
+    {
+        "q": "Le scanner est lent",
+        "a": "La vitesse du scanner depend de ton plan. Free: 2min, Basic: 30s, Pro: 5s, VIP: 1s. Passe a un plan superieur pour un scan plus rapide. Le plan VIP utilise 10 threads en parallele pour une vitesse maximale.",
+        "keywords": ["lent", "vitesse", "rapide", "scanner", "temps"]
+    },
+]
+
+
+@app.route("/api/support/faq")
+@login_required
+def api_support_faq():
+    """Retourne la FAQ complete (plans payants uniquement)"""
+    user = request.user
+    if user.get("plan", "free") == "free" and not user.get("is_admin"):
+        return jsonify({"error": "Le support est reserve aux abonnes"}), 403
+    return jsonify({"faq": [{"q": f["q"], "a": f["a"]} for f in SUPPORT_FAQ]})
+
+
+@app.route("/api/support/ask", methods=["POST"])
+@login_required
+def api_support_ask():
+    """Cherche une reponse dans la FAQ pour la question de l'utilisateur"""
+    user = request.user
+    if user.get("plan", "free") == "free" and not user.get("is_admin"):
+        return jsonify({"error": "Le support est reserve aux abonnes"}), 403
+
+    data = request.json or {}
+    question = (data.get("question", "")).lower().strip()
+
+    if not question:
+        return jsonify({"error": "Question vide"}), 400
+
+    # Recherche par mots-cles
+    best_match = None
+    best_score = 0
+    for faq in SUPPORT_FAQ:
+        score = sum(1 for kw in faq["keywords"] if kw in question)
+        if score > best_score:
+            best_score = score
+            best_match = faq
+
+    if best_match and best_score > 0:
+        return jsonify({
+            "found": True,
+            "question": best_match["q"],
+            "answer": best_match["a"],
+        })
+    else:
+        return jsonify({
+            "found": False,
+            "message": "Je n'ai pas trouve de reponse. Tu peux contacter le support humain.",
+        })
+
+
+@app.route("/api/support/escalate", methods=["POST"])
+@login_required
+def api_support_escalate():
+    """Escalade un probleme vers le support humain (envoie un message Telegram au support)"""
+    user = request.user
+    if user.get("plan", "free") == "free" and not user.get("is_admin"):
+        return jsonify({"error": "Le support est reserve aux abonnes"}), 403
+
+    data = request.json or {}
+    message = data.get("message", "").strip()
+    history = data.get("history", [])
+
+    if not message:
+        return jsonify({"error": "Message vide"}), 400
+
+    # Formater le rapport d'escalade
+    report = (
+        f"📩 SUPPORT ESCALADE\n"
+        f"User: {user.get('username', '?')} ({user.get('email', '?')})\n"
+        f"Plan: {user.get('plan', 'free')}\n"
+        f"Message: {message}\n"
+    )
+    if history:
+        report += "\n--- Historique ---\n"
+        for h in history[-5:]:  # Derniers 5 messages max
+            report += f"{'User' if h.get('from') == 'user' else 'Bot'}: {h.get('text', '')}\n"
+
+    # Envoyer au support via Telegram (si configure)
+    support_sent = False
+    if ADMIN_EMAIL:
+        # On utilise le chat_id admin s'il existe
+        db = get_db()
+        admin = db.execute(
+            "SELECT telegram_chat_id FROM users WHERE email = ? AND is_admin = 1",
+            (ADMIN_EMAIL,)
+        ).fetchone()
+        db.close()
+
+        if admin and admin[0]:
+            from notifications import notification_manager
+            try:
+                import requests as req
+                from config import TELEGRAM_BOT_TOKEN
+                if TELEGRAM_BOT_TOKEN:
+                    req.post(
+                        f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage",
+                        json={"chat_id": admin[0], "text": report, "parse_mode": "HTML"},
+                        timeout=8
+                    )
+                    support_sent = True
+            except Exception:
+                pass
+
+    return jsonify({
+        "success": True,
+        "sent_telegram": support_sent,
+        "message": "Ton message a ete transmis au support. On te recontacte rapidement !",
+        "contact": {
+            "email": ADMIN_EMAIL or "support@vintedsniper.fr",
+            "discord": "discord.gg/vintedsniper",
+            "telegram": "@VintedSniperSupport",
+        }
+    })
+
+
+# ============================================
 # STATS VIP - Performance du scanner
 # ============================================
 _scan_stats = {"total_scans": 0, "items_found": 0, "start_time": time.time(), "last_scan": 0}
@@ -1071,8 +1240,7 @@ def api_stats_performance():
     user_stats = db.execute("""
         SELECT
             COUNT(*) as total_items,
-            COUNT(CASE WHEN date(created_at) = date('now') THEN 1 END) as items_today,
-            MIN(created_at) as first_item_at
+            COUNT(CASE WHEN found_at > strftime('%s','now','-1 day') THEN 1 END) as items_today
         FROM found_items
         WHERE user_id = ?
     """, (user["id"],)).fetchone()
@@ -1129,7 +1297,7 @@ def api_admin_system():
     active_users = db.execute("SELECT COUNT(*) FROM users WHERE is_active = 1").fetchone()[0]
     total_items = db.execute("SELECT COUNT(*) FROM found_items").fetchone()[0]
     items_today = db.execute(
-        "SELECT COUNT(*) FROM found_items WHERE date(created_at) = date('now')"
+        "SELECT COUNT(*) FROM found_items WHERE found_at > strftime('%s','now','-1 day')"
     ).fetchone()[0]
     total_searches = db.execute("SELECT COUNT(*) FROM searches WHERE is_active = 1").fetchone()[0]
     plan_dist = {}
@@ -1182,11 +1350,11 @@ def api_admin_live_logs():
 
     # Derniers articles trouves
     items = db.execute("""
-        SELECT fi.title, fi.price, fi.created_at, u.username, s.name as search_name
+        SELECT fi.title, fi.price, fi.found_at, u.username, s.name as search_name
         FROM found_items fi
         JOIN users u ON fi.user_id = u.id
         LEFT JOIN searches s ON fi.search_id = s.id
-        ORDER BY fi.created_at DESC LIMIT 20
+        ORDER BY fi.found_at DESC LIMIT 20
     """).fetchall()
 
     # Derniers users inscrits
@@ -1210,7 +1378,7 @@ def api_admin_live_logs():
         item = dict(item)
         logs.append({
             "type": "item",
-            "time": item.get("created_at", ""),
+            "time": item.get("found_at", ""),
             "msg": f"ITEM_FOUND: {item.get('title','')} | {item.get('price',0)}EUR | user:{item.get('username','')} | search:{item.get('search_name','')}",
         })
     for u in users:
@@ -1312,6 +1480,8 @@ def run_scanner():
 
                 # Recherche batch multi-thread (vitesse adaptee au plan)
                 results = vinted.search_batch(search_configs, plan=user_plan)
+                total_items_found = sum(len(v) for v in results.values())
+                record_scan_event(total_items_found)
 
                 # Marquer le scan comme effectue
                 with _scan_lock:
@@ -1386,6 +1556,10 @@ if RUN_SCANNER_IN_WEB:
     logger.info("scanner_started=true")
 else:
     logger.info("scanner_started=false (RUN_SCANNER_IN_WEB=0)")
+
+# Demarrage maintenance automatique (nettoyage DB, purge logs, etc.)
+_maintenance_thread = start_maintenance_thread()
+logger.info("maintenance_thread_started=true")
 
 
 # ============================================

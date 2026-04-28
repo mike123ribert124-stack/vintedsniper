@@ -153,40 +153,13 @@ class NotificationManager:
             return False
 
     # ==========================================
-    # EMAIL
+    # EMAIL (DESACTIVE pour les notifications articles)
     # ==========================================
+    # Les emails Brevo sont reserves UNIQUEMENT au reset de mot de passe.
+    # Cela preserve le quota Brevo pour les emails transactionnels essentiels.
     def send_email(self, to_email, item, search_name=""):
-        """Envoie une alerte par email via Brevo API"""
-        if not BREVO_API_KEY or not to_email:
-            return False
-
-        try:
-            price = item.get("price", 0)
-            subject = f"[{APP_NAME}] {item.get('title', 'Nouvel article')} - {price:.2f} EUR"
-            html = f"""
-            <html>
-            <body style="font-family: Arial, sans-serif; background: #1a1a2e; color: #fff; padding: 20px;">
-                <div style="max-width: 500px; margin: 0 auto; background: #16213e; border-radius: 12px; padding: 20px;">
-                    <h2 style="color: #00d4ff;">{APP_NAME}</h2>
-                    <h3>Nouvel article trouve !</h3>
-                    <p><strong>Recherche:</strong> {search_name}</p>
-                    <hr style="border-color: #333;">
-                    <h3><a href="{item.get('url', '#')}" style="color: #00d4ff;">{item.get('title', 'Article')}</a></h3>
-                    <p style="font-size: 24px; color: #2ecc71;"><strong>{price:.2f} EUR</strong></p>
-                    <p>Marque: {item.get('brand', 'N/A')} | Taille: {item.get('size', 'N/A')}</p>
-                    <p>Vendeur: {item.get('user', '?')} | Favoris: {item.get('favourite_count', 0)}</p>
-                    <a href="{item.get('url', '#')}" style="display:inline-block; background:#00d4ff; color:#000; padding:12px 24px; border-radius:8px; text-decoration:none; font-weight:bold; margin-top:10px;">
-                        Voir sur Vinted
-                    </a>
-                </div>
-            </body>
-            </html>
-            """
-            self._send_brevo_email(to_email, subject, html)
-            return True
-        except Exception as e:
-            print(f"[Notif] Email erreur: {e}")
-            return False
+        """DESACTIVE - Notifications article par email supprimees pour preserver le quota Brevo."""
+        return False
 
     # ==========================================
     # SSE (Server-Sent Events) - Navigateur

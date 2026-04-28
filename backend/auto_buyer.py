@@ -220,11 +220,12 @@ class AutoBuyer:
 
         # Verifier le nombre max d'achats par jour
         daily_limit = buy_rules.get("daily_limit", 5)
-        today_purchases = sum(
-            1 for p in self._purchase_log
-            if p.get("user_id") == buy_rules.get("user_id")
-            and p.get("timestamp", 0) > time.time() - 86400
-        )
+        with self._lock:
+            today_purchases = sum(
+                1 for p in self._purchase_log
+                if p.get("user_id") == buy_rules.get("user_id")
+                and p.get("timestamp", 0) > time.time() - 86400
+            )
         if today_purchases >= daily_limit:
             return False
 
@@ -232,25 +233,27 @@ class AutoBuyer:
 
     def _log_purchase(self, user_id, item_id, price, type_, status):
         """Log un achat/offre"""
-        self._purchase_log.append({
-            "user_id": user_id,
-            "item_id": item_id,
-            "price": price,
-            "type": type_,
-            "status": status,
-            "timestamp": time.time(),
-        })
+        with self._lock:
+            self._purchase_log.append({
+                "user_id": user_id,
+                "item_id": item_id,
+                "price": price,
+                "type": type_,
+                "status": status,
+                "timestamp": time.time(),
+            })
 
-        # Garder les 1000 derniers logs
-        if len(self._purchase_log) > 1000:
-            self._purchase_log = self._purchase_log[-1000:]
+            # Garder les 1000 derniers logs
+            if len(self._purchase_log) > 1000:
+                self._purchase_log = self._purchase_log[-1000:]
 
     def get_purchase_history(self, user_id, limit=20):
         """Recupere l'historique des achats d'un utilisateur"""
-        user_logs = [
-            p for p in reversed(self._purchase_log)
-            if p.get("user_id") == user_id
-        ]
+        with self._lock:
+            user_logs = [
+                p for p in reversed(self._purchase_log)
+                if p.get("user_id") == user_id
+            ]
         return user_logs[:limit]
 
 

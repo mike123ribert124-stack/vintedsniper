@@ -47,7 +47,7 @@ PLANS = {
         "price_yearly": 144,        # 12€/mois = -20%
         "max_searches": 10,
         "scan_interval": 30,        # 30 secondes
-        "notifications": ["discord", "email"],
+        "notifications": ["discord"],
         "auto_buy": False,
         "max_favorites": 50,
         "stripe_price_id": os.environ.get("STRIPE_BASIC_PRICE_ID", ""),
@@ -60,7 +60,7 @@ PLANS = {
         "price_yearly": 480,        # 40€/mois = -20%
         "max_searches": 30,
         "scan_interval": 5,         # 5 secondes
-        "notifications": ["discord", "email", "browser"],
+        "notifications": ["discord", "browser"],
         "auto_buy": True,
         "max_favorites": 200,
         "stripe_price_id": os.environ.get("STRIPE_PRO_PRICE_ID", ""),
@@ -73,7 +73,7 @@ PLANS = {
         "price_yearly": 864,        # 72€/mois = -20%
         "max_searches": 100,
         "scan_interval": 1,         # 1 seconde
-        "notifications": ["discord", "telegram", "email", "browser"],
+        "notifications": ["discord", "telegram", "browser"],
         "auto_buy": True,
         "max_favorites": -1,        # Illimite
         "stripe_price_id": os.environ.get("STRIPE_VIP_PRICE_ID", ""),
