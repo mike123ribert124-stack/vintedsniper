@@ -11,21 +11,125 @@
     <style>
         *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
 
-        :root {
+        /* ── THEME FREE (défaut) : sobre, gris ── */
+        :root, body.theme-free {
+            --bg:        #0e0e12;
+            --bg2:       #141418;
+            --bg3:       #1a1a20;
+            --sidebar:   #101014;
+            --accent:    #8a8a9a;
+            --accent2:   #a0a0b0;
+            --accent-dim: rgba(138,138,154,.12);
+            --accent-line: rgba(138,138,154,.25);
+            --gold:      #8a8a9a;
+            --gold2:     #a0a0b0;
+            --gold-dim:  rgba(138,138,154,.12);
+            --gold-line: rgba(138,138,154,.25);
+            --cyan:      #6a9fba;
+            --cyan-dim:  rgba(106,159,186,.12);
+            --glass:     rgba(255,255,255,.03);
+            --glass2:    rgba(255,255,255,.05);
+            --line:      rgba(255,255,255,.07);
+            --line2:     rgba(255,255,255,.10);
+            --text:      #c8c8d4;
+            --text2:     #606070;
+            --text3:     #8a8a9a;
+            --green:     #5a9a6a;
+            --green-dim: rgba(90,154,106,.12);
+            --orange:    #b08a4a;
+            --red:       #c06060;
+            --red-dim:   rgba(192,96,96,.10);
+            --r:         12px;
+            --r2:        18px;
+            --sidebar-w: 240px;
+            --glow:      none;
+            --plan-gradient: linear-gradient(135deg, #666, #888);
+        }
+
+        /* ── THEME BASIC : bleu acier ── */
+        body.theme-basic {
+            --bg:        #080c14;
+            --bg2:       #0c1220;
+            --bg3:       #101828;
+            --sidebar:   #0a0e18;
+            --accent:    #4a90d9;
+            --accent2:   #5ea8f0;
+            --accent-dim: rgba(74,144,217,.15);
+            --accent-line: rgba(74,144,217,.30);
+            --gold:      #4a90d9;
+            --gold2:     #5ea8f0;
+            --gold-dim:  rgba(74,144,217,.15);
+            --gold-line: rgba(74,144,217,.30);
+            --cyan:      #40b8e0;
+            --cyan-dim:  rgba(64,184,224,.13);
+            --glass:     rgba(74,144,217,.04);
+            --glass2:    rgba(74,144,217,.07);
+            --line:      rgba(74,144,217,.10);
+            --line2:     rgba(74,144,217,.16);
+            --text:      #d8e4f4;
+            --text2:     #5a7a9a;
+            --text3:     #8aaace;
+            --green:     #2dd98a;
+            --green-dim: rgba(45,217,138,.15);
+            --orange:    #e0a040;
+            --red:       #ff5573;
+            --red-dim:   rgba(255,85,115,.12);
+            --glow:      0 0 60px rgba(74,144,217,.06);
+            --plan-gradient: linear-gradient(135deg, #2a6ab8, #5ea8f0);
+        }
+
+        /* ── THEME PRO : violet premium ── */
+        body.theme-pro {
+            --bg:        #0a0812;
+            --bg2:       #100d1c;
+            --bg3:       #161228;
+            --sidebar:   #0c0a16;
+            --accent:    #9b59d0;
+            --accent2:   #b87ae8;
+            --accent-dim: rgba(155,89,208,.15);
+            --accent-line: rgba(155,89,208,.32);
+            --gold:      #9b59d0;
+            --gold2:     #b87ae8;
+            --gold-dim:  rgba(155,89,208,.15);
+            --gold-line: rgba(155,89,208,.32);
+            --cyan:      #00c8e0;
+            --cyan-dim:  rgba(0,200,224,.13);
+            --glass:     rgba(155,89,208,.04);
+            --glass2:    rgba(155,89,208,.07);
+            --line:      rgba(155,89,208,.10);
+            --line2:     rgba(155,89,208,.18);
+            --text:      #e8e0f8;
+            --text2:     #6a5a8a;
+            --text3:     #a090c0;
+            --green:     #2dd98a;
+            --green-dim: rgba(45,217,138,.15);
+            --orange:    #f0a84b;
+            --red:       #ff5573;
+            --red-dim:   rgba(255,85,115,.12);
+            --glow:      0 0 80px rgba(155,89,208,.08);
+            --plan-gradient: linear-gradient(135deg, #7a30b0, #b87ae8);
+        }
+
+        /* ── THEME VIP : or luxe ── */
+        body.theme-vip {
             --bg:        #080810;
             --bg2:       #0d0d1a;
             --bg3:       #131322;
             --sidebar:   #0a0a16;
+            --accent:    #d4a843;
+            --accent2:   #f0c060;
+            --accent-dim: rgba(212,168,67,.15);
+            --accent-line: rgba(212,168,67,.32);
             --gold:      #d4a843;
             --gold2:     #f0c060;
             --gold-dim:  rgba(212,168,67,.15);
             --gold-line: rgba(212,168,67,.32);
             --cyan:      #00c8e0;
             --cyan-dim:  rgba(0,200,224,.13);
-            --glass:     rgba(255,255,255,.035);
-            --glass2:    rgba(255,255,255,.055);
-            --line:      rgba(255,255,255,.08);
-            --line2:     rgba(255,255,255,.12);
+            --glass:     rgba(212,168,67,.04);
+            --glass2:    rgba(212,168,67,.07);
+            --line:      rgba(212,168,67,.10);
+            --line2:     rgba(212,168,67,.18);
             --text:      #eef0ff;
             --text2:     #7a7f9d;
             --text3:     #b0b4cc;
@@ -34,10 +138,133 @@
             --orange:    #f0a84b;
             --red:       #ff5573;
             --red-dim:   rgba(255,85,115,.12);
-            --r:         12px;
-            --r2:        18px;
-            --sidebar-w: 240px;
+            --glow:      0 0 120px rgba(212,168,67,.10);
+            --plan-gradient: linear-gradient(135deg, #c9930a, #f0c060);
         }
+
+        /* ── THEME ADMIN : Matrix ── */
+        body.theme-admin {
+            --bg:        #000800;
+            --bg2:       #001200;
+            --bg3:       #001a00;
+            --sidebar:   #000a00;
+            --accent:    #00ff41;
+            --accent2:   #33ff66;
+            --accent-dim: rgba(0,255,65,.12);
+            --accent-line: rgba(0,255,65,.30);
+            --gold:      #00ff41;
+            --gold2:     #33ff66;
+            --gold-dim:  rgba(0,255,65,.12);
+            --gold-line: rgba(0,255,65,.30);
+            --cyan:      #00cc33;
+            --cyan-dim:  rgba(0,204,51,.12);
+            --glass:     rgba(0,255,65,.03);
+            --glass2:    rgba(0,255,65,.06);
+            --line:      rgba(0,255,65,.10);
+            --line2:     rgba(0,255,65,.18);
+            --text:      #c0ffc0;
+            --text2:     #307a30;
+            --text3:     #60c060;
+            --green:     #00ff41;
+            --green-dim: rgba(0,255,65,.15);
+            --orange:    #90ff20;
+            --red:       #ff2020;
+            --red-dim:   rgba(255,32,32,.12);
+            --glow:      0 0 150px rgba(0,255,65,.08);
+            --plan-gradient: linear-gradient(135deg, #003300, #00ff41);
+        }
+        body.theme-admin { font-family: 'Courier New', 'Fira Code', monospace !important; }
+        body.theme-admin * { font-family: inherit; }
+        body.theme-admin .logo span,
+        body.theme-admin .page-title,
+        body.theme-admin .stat-card .value,
+        body.theme-admin .card-header h3 {
+            font-family: 'Courier New', monospace !important;
+            text-shadow: 0 0 8px rgba(0,255,65,.5);
+        }
+
+        /* ── EFFETS VIP : particules dorées ── */
+        body.theme-vip .sidebar::before {
+            content: '';
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(180deg, rgba(212,168,67,.04) 0%, transparent 40%, rgba(212,168,67,.02) 100%);
+            pointer-events: none;
+        }
+
+        /* ── MATRIX RAIN (canvas admin) ── */
+        #matrixCanvas {
+            display: none;
+            position: fixed; top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            pointer-events: none; z-index: 0;
+            opacity: 0.07;
+        }
+        body.theme-admin #matrixCanvas { display: block; }
+
+        /* ── PLAN BADGE amélioré ── */
+        .plan-badge-icon { margin-right: 4px; }
+
+        /* ── WELCOME BANNER ── */
+        .welcome-banner {
+            padding: 20px 24px;
+            border-radius: var(--r2);
+            margin-bottom: 20px;
+            border: 1px solid var(--accent-line, var(--gold-line));
+            background: var(--accent-dim, var(--gold-dim));
+            animation: welcomeFadeIn .6s ease;
+            display: none;
+        }
+        .welcome-banner.show { display: block; }
+        .welcome-banner h2 {
+            font-size: 18px; font-weight: 800; margin-bottom: 4px;
+            background: var(--plan-gradient);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .welcome-banner p { font-size: 13px; color: var(--text2); }
+        @keyframes welcomeFadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── GLOW EFFECT sur cards premium ── */
+        body.theme-pro .stat-card:hover,
+        body.theme-vip .stat-card:hover,
+        body.theme-admin .stat-card:hover {
+            box-shadow: var(--glow);
+            border-color: var(--accent-line);
+        }
+        body.theme-pro .card:hover,
+        body.theme-vip .card:hover,
+        body.theme-admin .card:hover {
+            border-color: var(--accent-line);
+        }
+
+        /* ── SCANNER LIVE INDICATOR ── */
+        .scanner-live {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: 12px; font-weight: 600; color: var(--green);
+            padding: 4px 12px; border-radius: 999px;
+            background: var(--green-dim); border: 1px solid rgba(45,217,138,.25);
+        }
+        .scanner-live .pulse {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: var(--green);
+            animation: scanPulse 1.5s ease infinite;
+        }
+        @keyframes scanPulse {
+            0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(45,217,138,.5); }
+            50% { opacity: .6; box-shadow: 0 0 0 6px rgba(45,217,138,0); }
+        }
+
+        /* ── SOUND TOGGLE ── */
+        .sound-toggle {
+            display: inline-flex; align-items: center; gap: 6px;
+            cursor: pointer; font-size: 13px; color: var(--text2);
+            padding: 6px 12px; border-radius: 8px;
+            border: 1px solid var(--line); transition: all .2s;
+        }
+        .sound-toggle:hover { border-color: var(--accent-line); color: var(--text); }
+        .sound-toggle.active { color: var(--accent2); border-color: var(--accent-line); background: var(--accent-dim); }
 
         html { scroll-behavior: smooth; }
         body {
@@ -389,6 +616,9 @@
 </head>
 <body>
 
+<!-- ── MATRIX RAIN CANVAS ── -->
+<canvas id="matrixCanvas"></canvas>
+
 <!-- ── SIDEBAR ── -->
 <div class="sidebar">
     <div class="logo">
@@ -437,6 +667,21 @@
                 <div class="page-title">Vue d'ensemble</div>
                 <div class="page-subtitle">Toutes tes stats en temps réel</div>
             </div>
+            <div style="display:flex; gap:10px; align-items:center;">
+                <div class="scanner-live" id="scannerLive">
+                    <span class="pulse"></span>
+                    Scanner actif — <span id="scannerCount">0</span> scans
+                </div>
+                <div class="sound-toggle" id="soundToggle" onclick="toggleSound()">
+                    🔊 Son
+                </div>
+            </div>
+        </div>
+
+        <!-- Welcome Banner -->
+        <div class="welcome-banner" id="welcomeBanner">
+            <h2 id="welcomeTitle">Bienvenue !</h2>
+            <p id="welcomeText">Ton dashboard est prêt.</p>
         </div>
 
         <div class="stats-grid">
@@ -754,6 +999,133 @@
 // STATE
 // ==========================================
 let userData = null;
+let soundEnabled = false;
+let scanCount = 0;
+let matrixAnimId = null;
+
+// ==========================================
+// THEME ENGINE
+// ==========================================
+function applyTheme(plan, isAdmin) {
+    document.body.className = '';
+    if (isAdmin) {
+        document.body.classList.add('theme-admin');
+        startMatrixRain();
+    } else {
+        const themeMap = { free: 'theme-free', basic: 'theme-basic', pro: 'theme-pro', vip: 'theme-vip' };
+        document.body.classList.add(themeMap[plan] || 'theme-free');
+        stopMatrixRain();
+    }
+}
+
+function getPlanBadgeHTML(plan, isAdmin) {
+    if (isAdmin) return '<span class="plan-badge-icon">👁️</span> ADMIN';
+    const badges = {
+        free:  '<span class="plan-badge-icon">⚪</span> Free',
+        basic: '<span class="plan-badge-icon">🔵</span> Basic',
+        pro:   '<span class="plan-badge-icon">💎</span> Pro',
+        vip:   '<span class="plan-badge-icon">👑</span> VIP',
+    };
+    return badges[plan] || badges.free;
+}
+
+function showWelcomeBanner(plan, username, isAdmin) {
+    const banner = document.getElementById('welcomeBanner');
+    const title = document.getElementById('welcomeTitle');
+    const text = document.getElementById('welcomeText');
+    if (isAdmin) {
+        title.textContent = '> ACCESS GRANTED_';
+        text.textContent = 'Bienvenue dans la Matrice, ' + username + '. Tous les systèmes sont sous contrôle.';
+    } else if (plan === 'vip') {
+        title.textContent = '✦ Bienvenue, ' + username + ' ✦';
+        text.textContent = 'Votre expérience VIP est active. Scanner instantané, achat auto, priorité maximale.';
+    } else if (plan === 'pro') {
+        title.textContent = '💎 Salut ' + username + ' !';
+        text.textContent = 'Ton plan Pro te donne accès au scanner rapide et aux fonctionnalités avancées.';
+    } else if (plan === 'basic') {
+        title.textContent = 'Hey ' + username + ' !';
+        text.textContent = 'Ton plan Basic est actif. Passe au Pro pour un scanner encore plus rapide.';
+    } else {
+        title.textContent = 'Bienvenue ' + username + ' !';
+        text.textContent = 'Passe à un plan payant pour débloquer la vitesse et les fonctionnalités premium.';
+    }
+    banner.classList.add('show');
+    setTimeout(() => banner.classList.remove('show'), 8000);
+}
+
+// ==========================================
+// MATRIX RAIN
+// ==========================================
+function startMatrixRain() {
+    const canvas = document.getElementById('matrixCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const chars = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789ABCDEF';
+    const fontSize = 14;
+    const columns = Math.floor(canvas.width / fontSize);
+    const drops = Array(columns).fill(1);
+
+    function draw() {
+        ctx.fillStyle = 'rgba(0, 8, 0, 0.05)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#00ff41';
+        ctx.font = fontSize + 'px monospace';
+
+        for (let i = 0; i < drops.length; i++) {
+            const char = chars[Math.floor(Math.random() * chars.length)];
+            ctx.fillText(char, i * fontSize, drops[i] * fontSize);
+            if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                drops[i] = 0;
+            }
+            drops[i]++;
+        }
+        matrixAnimId = requestAnimationFrame(draw);
+    }
+    draw();
+
+    window.addEventListener('resize', () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    });
+}
+
+function stopMatrixRain() {
+    if (matrixAnimId) {
+        cancelAnimationFrame(matrixAnimId);
+        matrixAnimId = null;
+    }
+}
+
+// ==========================================
+// SOUND
+// ==========================================
+function toggleSound() {
+    soundEnabled = !soundEnabled;
+    const btn = document.getElementById('soundToggle');
+    btn.textContent = soundEnabled ? '🔊 Son ON' : '🔇 Son OFF';
+    btn.classList.toggle('active', soundEnabled);
+}
+
+function playNotifSound() {
+    if (!soundEnabled) return;
+    try {
+        const actx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = actx.createOscillator();
+        const gain = actx.createGain();
+        osc.connect(gain);
+        gain.connect(actx.destination);
+        osc.frequency.setValueAtTime(880, actx.currentTime);
+        osc.frequency.setValueAtTime(1100, actx.currentTime + 0.1);
+        osc.frequency.setValueAtTime(880, actx.currentTime + 0.2);
+        gain.gain.setValueAtTime(0.15, actx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + 0.4);
+        osc.start(actx.currentTime);
+        osc.stop(actx.currentTime + 0.4);
+    } catch(e) {}
+}
 
 // ==========================================
 // API
@@ -780,12 +1152,21 @@ async function init() {
         const data = await api('/api/me');
         if (data.error) { window.location.href = '/login'; return; }
         userData = data;
+
+        // Appliquer le thème selon le plan
+        const plan = userData.user.plan || 'free';
+        const isAdmin = userData.user.is_admin || false;
+        applyTheme(plan, isAdmin);
+
         renderOverview();
         loadSearches();
         loadItems();
         renderSettings();
         loadAutobuySettings();
         startSSE();
+
+        // Bannière de bienvenue
+        showWelcomeBanner(plan, userData.user.username, isAdmin);
     } catch(e) {
         window.location.href = '/login';
     }
@@ -801,7 +1182,7 @@ function renderOverview() {
     document.getElementById('statNotifs').textContent = s.notifications_sent;
     document.getElementById('statToday').textContent = s.items_today;
     document.getElementById('userNameDisplay').textContent = userData.user.username;
-    document.getElementById('planBadge').textContent = userData.user.plan_name;
+    document.getElementById('planBadge').innerHTML = getPlanBadgeHTML(userData.user.plan, userData.user.is_admin);
     renderOnboardingChecklist();
 }
 
@@ -1259,7 +1640,12 @@ function startSSE() {
             try { data = JSON.parse(e.data); } catch(_) { return; }
             if (data.type === 'new_item' && data.item) {
                 const item = data.item;
+                scanCount++;
+                const sc = document.getElementById('scannerCount');
+                if (sc) sc.textContent = scanCount;
+
                 showToast(`Nouvel article: ${escHtml(item.title)} - ${item.price}€`);
+                playNotifSound();
                 if (Notification.permission === 'granted') {
                     new Notification('VintedSniper', {
                         body: `${item.title} - ${item.price}€`,

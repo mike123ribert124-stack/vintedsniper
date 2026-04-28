@@ -339,6 +339,7 @@ def api_me():
             "plan_name": plan["name"],
             "discord_webhook": user.get("discord_webhook", ""),
             "telegram_chat_id": user.get("telegram_chat_id", ""),
+            "is_admin": bool(user.get("is_admin", 0)),
         },
         "plan": plan,
         "stats": stats,
