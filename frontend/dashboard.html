@@ -612,12 +612,144 @@
             }
             .mobile-nav button.active { background: var(--gold-dim); color: var(--gold2); }
         }
+        /* ── VIP GOLD PARTICLES ── */
+        #vipParticles {
+            display: none;
+            position: fixed; top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            pointer-events: none; z-index: 0;
+        }
+        body.theme-vip #vipParticles { display: block; }
+
+        /* ── VIP LOUNGE ── */
+        .vip-perf-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 12px; margin-bottom: 20px;
+        }
+        .perf-card {
+            background: linear-gradient(145deg, rgba(212,168,67,.06), rgba(212,168,67,.02));
+            border: 1px solid rgba(212,168,67,.18);
+            border-radius: var(--r2); padding: 18px 20px;
+            text-align: center; transition: all .3s;
+        }
+        .perf-card:hover {
+            border-color: rgba(212,168,67,.4);
+            box-shadow: 0 0 30px rgba(212,168,67,.1);
+            transform: translateY(-2px);
+        }
+        .perf-card .perf-value {
+            font-size: 28px; font-weight: 900; line-height: 1;
+            background: linear-gradient(135deg, #c9930a, #f0c060);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .perf-card .perf-label {
+            font-size: 11px; font-weight: 600; text-transform: uppercase;
+            letter-spacing: 1px; color: var(--text2); margin-top: 8px;
+        }
+        body.theme-admin .perf-card {
+            background: linear-gradient(145deg, rgba(0,255,65,.04), rgba(0,255,65,.01));
+            border-color: rgba(0,255,65,.15);
+        }
+        body.theme-admin .perf-card:hover {
+            border-color: rgba(0,255,65,.4);
+            box-shadow: 0 0 30px rgba(0,255,65,.08);
+        }
+        body.theme-admin .perf-card .perf-value {
+            background: linear-gradient(135deg, #00aa30, #33ff66);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            text-shadow: none;
+        }
+
+        /* ── SNIPE BUTTON (VIP) ── */
+        .btn-snipe {
+            background: linear-gradient(135deg, #c9930a, #f0c060);
+            color: #0d0a00; font-size: 11px; font-weight: 800;
+            padding: 4px 10px; border-radius: 8px; border: none;
+            cursor: pointer; transition: all .2s; letter-spacing: .3px;
+            text-transform: uppercase;
+        }
+        .btn-snipe:hover {
+            box-shadow: 0 4px 16px rgba(212,168,67,.35);
+            transform: scale(1.05);
+        }
+
+        /* ── ADMIN TERMINAL ── */
+        .terminal {
+            background: #000a00;
+            border: 1px solid rgba(0,255,65,.25);
+            border-radius: 12px;
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+        }
+        .terminal-header {
+            background: rgba(0,255,65,.08);
+            padding: 8px 14px;
+            display: flex; align-items: center; gap: 8px;
+            border-bottom: 1px solid rgba(0,255,65,.15);
+        }
+        .terminal-dot { width: 10px; height: 10px; border-radius: 50%; }
+        .terminal-dot.r { background: #ff5f56; }
+        .terminal-dot.y { background: #ffbd2e; }
+        .terminal-dot.g { background: #27c93f; }
+        .terminal-title {
+            font-size: 12px; color: #33ff66; margin-left: 8px;
+            font-weight: 600; letter-spacing: 1px;
+        }
+        .terminal-body {
+            padding: 14px; max-height: 400px; overflow-y: auto;
+            font-size: 12px; line-height: 1.7; color: #33ff66;
+        }
+        .terminal-body::-webkit-scrollbar { width: 6px; }
+        .terminal-body::-webkit-scrollbar-thumb { background: rgba(0,255,65,.3); border-radius: 3px; }
+        .terminal-line { margin-bottom: 2px; }
+        .terminal-line .t-time { color: #1a8a1a; }
+        .terminal-line .t-type-item { color: #f0c060; }
+        .terminal-line .t-type-user { color: #00c8e0; }
+        .terminal-line .t-type-payment { color: #2dd98a; }
+        .terminal-cursor {
+            display: inline-block; width: 8px; height: 14px;
+            background: #33ff66; animation: blink 1s step-end infinite;
+            vertical-align: middle; margin-left: 4px;
+        }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        /* ── ADMIN SYSTEM CARDS ── */
+        .sys-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px; margin-bottom: 20px;
+        }
+        .sys-card {
+            background: rgba(0,255,65,.03);
+            border: 1px solid rgba(0,255,65,.12);
+            border-radius: var(--r2); padding: 18px 20px;
+        }
+        .sys-card .sys-title {
+            font-size: 10px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 1.5px; color: #1a8a1a; margin-bottom: 8px;
+        }
+        .sys-card .sys-value {
+            font-size: 24px; font-weight: 900; color: #33ff66;
+            text-shadow: 0 0 8px rgba(0,255,65,.3);
+        }
+        .sys-card .sys-sub {
+            font-size: 11px; color: #307a30; margin-top: 4px;
+        }
+
+        /* ── REVENUE PILL ── */
+        .revenue-pill {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 6px 16px; border-radius: 999px;
+            background: rgba(45,217,138,.1); border: 1px solid rgba(45,217,138,.3);
+            font-size: 18px; font-weight: 900; color: #2dd98a;
+        }
     </style>
 </head>
 <body>
 
 <!-- ── MATRIX RAIN CANVAS ── -->
 <canvas id="matrixCanvas"></canvas>
+<!-- ── VIP GOLD PARTICLES ── -->
+<canvas id="vipParticles"></canvas>
 
 <!-- ── SIDEBAR ── -->
 <div class="sidebar">
@@ -641,6 +773,12 @@
     </div>
     <div class="nav-item" onclick="showSection('autobuy')">
         <span class="icon">🛒</span> Achat auto
+    </div>
+    <div class="nav-item" id="navVip" onclick="showSection('vip')" style="display:none; color:var(--gold2);">
+        <span class="icon">👑</span> VIP Lounge
+    </div>
+    <div class="nav-item" id="navAdmin" onclick="showSection('admin')" style="display:none; color:#33ff66;">
+        <span class="icon">🖥️</span> Contrôle
     </div>
 
     <div class="sidebar-bottom">
@@ -898,6 +1036,110 @@
         </div>
     </div>
 
+    <!-- ── VIP LOUNGE ── -->
+    <div id="section-vip" style="display:none">
+        <div class="page-header">
+            <div>
+                <div class="page-title">👑 VIP Lounge</div>
+                <div class="page-subtitle">Ton centre de commande exclusif</div>
+            </div>
+        </div>
+
+        <!-- Performance scanner -->
+        <div class="vip-perf-grid" id="vipPerfGrid">
+            <div class="perf-card">
+                <div class="perf-value" id="vipScansMin">-</div>
+                <div class="perf-label">Scans / min</div>
+            </div>
+            <div class="perf-card">
+                <div class="perf-value" id="vipThreads">-</div>
+                <div class="perf-label">Threads actifs</div>
+            </div>
+            <div class="perf-card">
+                <div class="perf-value" id="vipDelay">-</div>
+                <div class="perf-label">Délai (sec)</div>
+            </div>
+            <div class="perf-card">
+                <div class="perf-value" id="vipUptime">-</div>
+                <div class="perf-label">Uptime</div>
+            </div>
+            <div class="perf-card">
+                <div class="perf-value" id="vipItemsToday">-</div>
+                <div class="perf-label">Articles aujourd'hui</div>
+            </div>
+            <div class="perf-card">
+                <div class="perf-value" id="vipAutobuyRate">-</div>
+                <div class="perf-label">Taux achat auto</div>
+            </div>
+        </div>
+
+        <!-- Snipe rapide -->
+        <div class="card">
+            <div class="card-header">
+                <h3>⚡ Snipe rapide</h3>
+                <div class="page-subtitle">Tes derniers articles — clique pour sniper en 1 clic</div>
+            </div>
+            <div id="vipSnipeList">Chargement...</div>
+        </div>
+    </div>
+
+    <!-- ── ADMIN CONTROL CENTER ── -->
+    <div id="section-admin" style="display:none">
+        <div class="page-header">
+            <div>
+                <div class="page-title">> SYSTEM_CONTROL_</div>
+                <div class="page-subtitle">Accès niveau administrateur</div>
+            </div>
+            <div class="revenue-pill" id="adminRevenue">... EUR/mois</div>
+        </div>
+
+        <!-- System stats -->
+        <div class="sys-grid" id="adminSysGrid">
+            <div class="sys-card">
+                <div class="sys-title">Utilisateurs</div>
+                <div class="sys-value" id="sysUsers">-</div>
+                <div class="sys-sub" id="sysUsersActive">- actifs</div>
+            </div>
+            <div class="sys-card">
+                <div class="sys-title">Scans totaux</div>
+                <div class="sys-value" id="sysScans">-</div>
+                <div class="sys-sub" id="sysScansMin">- /min</div>
+            </div>
+            <div class="sys-card">
+                <div class="sys-title">Articles trouvés</div>
+                <div class="sys-value" id="sysItems">-</div>
+                <div class="sys-sub" id="sysItemsToday">- aujourd'hui</div>
+            </div>
+            <div class="sys-card">
+                <div class="sys-title">Uptime</div>
+                <div class="sys-value" id="sysUptime">-</div>
+                <div class="sys-sub" id="sysPython">-</div>
+            </div>
+            <div class="sys-card">
+                <div class="sys-title">Recherches actives</div>
+                <div class="sys-value" id="sysSearches">-</div>
+                <div class="sys-sub">scans en cours</div>
+            </div>
+            <div class="sys-card">
+                <div class="sys-title">Distribution plans</div>
+                <div class="sys-value" style="font-size:14px;" id="sysPlanDist">-</div>
+            </div>
+        </div>
+
+        <!-- Terminal live -->
+        <div class="terminal">
+            <div class="terminal-header">
+                <span class="terminal-dot r"></span>
+                <span class="terminal-dot y"></span>
+                <span class="terminal-dot g"></span>
+                <span class="terminal-title">VINTEDSNIPER_LIVE_FEED</span>
+            </div>
+            <div class="terminal-body" id="adminTerminal">
+                <div class="terminal-line"><span class="t-time">[system]</span> Connexion au flux en direct...<span class="terminal-cursor"></span></div>
+            </div>
+        </div>
+    </div>
+
 </div><!-- /main -->
 
 <!-- ── MOBILE NAV ── -->
@@ -1011,18 +1253,29 @@ let matrixAnimId = null;
 // ==========================================
 function applyTheme(plan, isAdmin) {
     document.body.className = '';
+    stopMatrixRain();
+    stopVipParticles();
+
     if (isAdmin) {
         document.body.classList.add('theme-admin');
         startMatrixRain();
+    } else if (plan === 'vip') {
+        document.body.classList.add('theme-vip');
+        startVipParticles();
     } else {
-        const themeMap = { free: 'theme-free', basic: 'theme-basic', pro: 'theme-pro', vip: 'theme-vip' };
+        const themeMap = { free: 'theme-free', basic: 'theme-basic', pro: 'theme-pro' };
         document.body.classList.add(themeMap[plan] || 'theme-free');
-        stopMatrixRain();
     }
 
-    // Afficher lien admin si admin
+    // Afficher lien admin + section contrôle si admin
     const adminLink = document.getElementById('adminLink');
     if (adminLink) adminLink.style.display = isAdmin ? 'flex' : 'none';
+    const navAdmin = document.getElementById('navAdmin');
+    if (navAdmin) navAdmin.style.display = isAdmin ? 'flex' : 'none';
+
+    // Afficher VIP Lounge si VIP ou admin
+    const navVip = document.getElementById('navVip');
+    if (navVip) navVip.style.display = (plan === 'vip' || plan === 'pro' || isAdmin) ? 'flex' : 'none';
 }
 
 function getPlanBadgeHTML(plan, isAdmin) {
@@ -1171,6 +1424,10 @@ async function init() {
         renderSettings();
         loadAutobuySettings();
         startSSE();
+
+        // Charger les sections exclusives
+        if (plan === 'vip' || plan === 'pro' || isAdmin) loadVipStats();
+        if (isAdmin) loadAdminSystem();
 
         // Bannière de bienvenue
         showWelcomeBanner(plan, userData.user.username, isAdmin);
@@ -1326,7 +1583,7 @@ function renderOnboardingChecklist() {
 // ACTIONS
 // ==========================================
 function showSection(name, sourceEl = null) {
-    ['overview', 'searches', 'items', 'settings', 'autobuy'].forEach(s => {
+    ['overview', 'searches', 'items', 'settings', 'autobuy', 'vip', 'admin'].forEach(s => {
         document.getElementById('section-' + s).style.display = s === name ? 'block' : 'none';
     });
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
@@ -1655,6 +1912,179 @@ async function loadAutobuyHistory() {
 }
 
 // ==========================================
+// VIP GOLD PARTICLES
+// ==========================================
+let vipAnimId = null;
+
+function startVipParticles() {
+    const canvas = document.getElementById('vipParticles');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const particles = [];
+    for (let i = 0; i < 40; i++) {
+        particles.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            size: Math.random() * 3 + 1,
+            speedY: Math.random() * 0.3 + 0.1,
+            speedX: Math.random() * 0.2 - 0.1,
+            opacity: Math.random() * 0.4 + 0.1,
+            pulse: Math.random() * Math.PI * 2,
+        });
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        particles.forEach(p => {
+            p.y -= p.speedY;
+            p.x += p.speedX;
+            p.pulse += 0.02;
+            const alpha = p.opacity * (0.5 + 0.5 * Math.sin(p.pulse));
+
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(240, 192, 96, ${alpha})`;
+            ctx.fill();
+
+            // Glow
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size * 3, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(212, 168, 67, ${alpha * 0.15})`;
+            ctx.fill();
+
+            if (p.y < -10) {
+                p.y = canvas.height + 10;
+                p.x = Math.random() * canvas.width;
+            }
+        });
+        vipAnimId = requestAnimationFrame(draw);
+    }
+    draw();
+
+    window.addEventListener('resize', () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    });
+}
+
+function stopVipParticles() {
+    if (vipAnimId) { cancelAnimationFrame(vipAnimId); vipAnimId = null; }
+}
+
+// ==========================================
+// VIP LOUNGE
+// ==========================================
+async function loadVipStats() {
+    const data = await api('/api/stats/performance');
+    if (data.error) return;
+
+    document.getElementById('vipScansMin').textContent = data.scanner.scans_per_min || '0';
+    document.getElementById('vipThreads').textContent = data.plan_speed.threads;
+    document.getElementById('vipDelay').textContent = data.plan_speed.delay + 's';
+    document.getElementById('vipUptime').textContent = data.scanner.uptime_hours + 'h';
+    document.getElementById('vipItemsToday').textContent = data.user.items_today;
+
+    const rate = data.autobuy.total > 0
+        ? Math.round(data.autobuy.success / data.autobuy.total * 100) + '%'
+        : '—';
+    document.getElementById('vipAutobuyRate').textContent = rate;
+
+    // Charger les items pour le snipe rapide
+    loadVipSnipeItems();
+}
+
+async function loadVipSnipeItems() {
+    const data = await api('/api/items?limit=10');
+    const container = document.getElementById('vipSnipeList');
+
+    if (!data.items || data.items.length === 0) {
+        container.innerHTML = '<p style="color:var(--text2);font-size:14px;">Aucun article. Lance une recherche d\'abord.</p>';
+        return;
+    }
+
+    container.innerHTML = data.items.map(item => `
+        <div class="item-row">
+            <img class="item-img" src="${item.photo_url || ''}" alt="" onerror="this.style.display='none'">
+            <div class="item-info">
+                <div class="title">${escHtml(item.title)}</div>
+                <div class="meta">${escHtml(item.brand || '')} · ${item.size || ''}</div>
+            </div>
+            <div class="item-price">${item.price}€</div>
+            <a class="item-link" href="${item.url || '#'}" target="_blank">Voir</a>
+            <button class="btn-snipe" onclick="snipeItem(${item.vinted_id}, ${item.price})" title="Envoyer une offre instantanée">⚡ SNIPE</button>
+        </div>
+    `).join('');
+}
+
+async function snipeItem(itemId, price) {
+    if (!confirm('Envoyer une offre de ' + price + '€ pour cet article ?')) return;
+    const data = await api('/api/autobuy/buy', {
+        method: 'POST',
+        body: JSON.stringify({ item_id: itemId, mode: 'offer', offer_price: price })
+    });
+    if (data.success) {
+        showToast('Offre envoyée !');
+        playNotifSound();
+    } else {
+        showToast(data.error || 'Erreur', true);
+    }
+}
+
+// ==========================================
+// ADMIN CONTROL CENTER
+// ==========================================
+async function loadAdminSystem() {
+    const data = await api('/api/admin/system');
+    if (data.error) return;
+
+    const s = data.system;
+    const u = data.users;
+    const sc = data.scanner;
+
+    document.getElementById('sysUsers').textContent = u.total;
+    document.getElementById('sysUsersActive').textContent = u.active + ' actifs';
+    document.getElementById('sysScans').textContent = sc.scans_total.toLocaleString();
+    document.getElementById('sysScansMin').textContent = sc.scans_per_min + ' /min';
+    document.getElementById('sysItems').textContent = sc.items_total.toLocaleString();
+    document.getElementById('sysItemsToday').textContent = sc.items_today + ' aujourd\'hui';
+    document.getElementById('sysUptime').textContent = s.uptime_str;
+    document.getElementById('sysPython').textContent = 'Python ' + s.python + ' / ' + s.os;
+    document.getElementById('sysSearches').textContent = sc.active_searches;
+    document.getElementById('adminRevenue').textContent = data.revenue.monthly_estimate + ' EUR/mois';
+
+    // Distribution des plans
+    const dist = u.plan_distribution;
+    const distHtml = Object.entries(dist).map(([k, v]) => {
+        const colors = { free: '#8a8a9a', basic: '#5ea8f0', pro: '#b87ae8', vip: '#f0c060' };
+        return `<span style="color:${colors[k] || '#fff'}">${k}: ${v}</span>`;
+    }).join(' · ');
+    document.getElementById('sysPlanDist').innerHTML = distHtml;
+
+    // Charger les logs
+    loadAdminLogs();
+}
+
+async function loadAdminLogs() {
+    const data = await api('/api/admin/live-logs');
+    if (data.error || !data.logs) return;
+
+    const terminal = document.getElementById('adminTerminal');
+    const lines = data.logs.map(log => {
+        const typeClass = log.type === 'item' ? 't-type-item' : log.type === 'user' ? 't-type-user' : 't-type-payment';
+        const time = log.time ? log.time.substring(11, 19) : '??:??:??';
+        return `<div class="terminal-line"><span class="t-time">[${time}]</span> <span class="${typeClass}">${escHtml(log.msg)}</span></div>`;
+    }).join('');
+
+    terminal.innerHTML = lines + '<div class="terminal-line">> _<span class="terminal-cursor"></span></div>';
+
+    // Auto-scroll en bas
+    terminal.scrollTop = terminal.scrollHeight;
+}
+
+// ==========================================
 // SSE
 // ==========================================
 function startSSE() {
@@ -1716,7 +2146,15 @@ function showToast(msg, isError = false) {
 // START
 // ==========================================
 init();
-setInterval(() => { loadItems(); }, 30000);
+setInterval(() => {
+    loadItems();
+    if (userData) {
+        const plan = userData.user.plan || 'free';
+        const isAdmin = userData.user.is_admin || false;
+        if (plan === 'vip' || plan === 'pro' || isAdmin) loadVipStats();
+        if (isAdmin) { loadAdminSystem(); loadAdminLogs(); }
+    }
+}, 30000);
 </script>
 </body>
 </html>

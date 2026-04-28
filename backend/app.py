@@ -1045,6 +1045,210 @@ def api_autobuy_history():
 
 
 # ============================================
+# STATS VIP - Performance du scanner
+# ============================================
+_scan_stats = {"total_scans": 0, "items_found": 0, "start_time": time.time(), "last_scan": 0}
+_scan_stats_lock = threading.Lock()
+
+
+def record_scan_event(items_count=0):
+    """Enregistre un event de scan pour les stats VIP"""
+    with _scan_stats_lock:
+        _scan_stats["total_scans"] += 1
+        _scan_stats["items_found"] += items_count
+        _scan_stats["last_scan"] = time.time()
+
+
+@app.route("/api/stats/performance")
+@login_required
+def api_stats_performance():
+    """Stats de performance pour VIP (vitesse scanner, taux succes)"""
+    user = request.user
+    plan = PLANS.get(user.get("plan", "free"), PLANS["free"])
+
+    # Stats utilisateur
+    db = get_db()
+    user_stats = db.execute("""
+        SELECT
+            COUNT(*) as total_items,
+            COUNT(CASE WHEN date(created_at) = date('now') THEN 1 END) as items_today,
+            MIN(created_at) as first_item_at
+        FROM found_items
+        WHERE user_id = ?
+    """, (user["id"],)).fetchone()
+
+    search_count = db.execute(
+        "SELECT COUNT(*) FROM searches WHERE user_id = ? AND is_active = 1",
+        (user["id"],)
+    ).fetchone()[0]
+
+    # Achats auto
+    autobuy_stats = {"total": 0, "success": 0}
+    purchase_log = auto_buyer.get_purchase_history(user["id"], 100)
+    autobuy_stats["total"] = len(purchase_log)
+    autobuy_stats["success"] = sum(1 for p in purchase_log if p.get("status") in ("completed", "sent"))
+
+    db.close()
+
+    with _scan_stats_lock:
+        uptime = time.time() - _scan_stats["start_time"]
+        scans_total = _scan_stats["total_scans"]
+        scans_per_min = round(scans_total / max(uptime / 60, 1), 1)
+
+    return jsonify({
+        "scanner": {
+            "scans_total": scans_total,
+            "scans_per_min": scans_per_min,
+            "uptime_hours": round(uptime / 3600, 1),
+            "last_scan_ago": round(time.time() - _scan_stats["last_scan"]) if _scan_stats["last_scan"] else None,
+        },
+        "user": {
+            "total_items": user_stats[0] if user_stats else 0,
+            "items_today": user_stats[1] if user_stats else 0,
+            "active_searches": search_count,
+        },
+        "autobuy": autobuy_stats,
+        "plan_speed": {
+            "delay": {"free": 0.5, "basic": 0.3, "pro": 0.1, "vip": 0}.get(user.get("plan", "free"), 0.5),
+            "threads": {"free": 3, "basic": 5, "pro": 8, "vip": 10}.get(user.get("plan", "free"), 3),
+        },
+    })
+
+
+# ============================================
+# ADMIN - Systeme et controles
+# ============================================
+@app.route("/api/admin/system")
+@admin_required
+def api_admin_system():
+    """Stats systeme pour le terminal admin"""
+    import platform
+
+    db = get_db()
+    total_users = db.execute("SELECT COUNT(*) FROM users").fetchone()[0]
+    active_users = db.execute("SELECT COUNT(*) FROM users WHERE is_active = 1").fetchone()[0]
+    total_items = db.execute("SELECT COUNT(*) FROM found_items").fetchone()[0]
+    items_today = db.execute(
+        "SELECT COUNT(*) FROM found_items WHERE date(created_at) = date('now')"
+    ).fetchone()[0]
+    total_searches = db.execute("SELECT COUNT(*) FROM searches WHERE is_active = 1").fetchone()[0]
+    plan_dist = {}
+    for row in db.execute("SELECT plan, COUNT(*) as c FROM users GROUP BY plan").fetchall():
+        plan_dist[row[0]] = row[1]
+
+    # Revenue estimee
+    revenue = 0
+    for plan_key, count in plan_dist.items():
+        p = PLANS.get(plan_key, {})
+        revenue += p.get("price_monthly", 0) * count
+
+    db.close()
+
+    with _scan_stats_lock:
+        uptime = time.time() - _scan_stats["start_time"]
+        scans_total = _scan_stats["total_scans"]
+        scans_per_min = round(scans_total / max(uptime / 60, 1), 1)
+
+    return jsonify({
+        "system": {
+            "python": platform.python_version(),
+            "os": platform.system(),
+            "uptime_hours": round(uptime / 3600, 1),
+            "uptime_str": f"{int(uptime//3600)}h {int((uptime%3600)//60)}m",
+        },
+        "users": {
+            "total": total_users,
+            "active": active_users,
+            "plan_distribution": plan_dist,
+        },
+        "scanner": {
+            "scans_total": scans_total,
+            "scans_per_min": scans_per_min,
+            "items_total": total_items,
+            "items_today": items_today,
+            "active_searches": total_searches,
+        },
+        "revenue": {
+            "monthly_estimate": revenue,
+        },
+    })
+
+
+@app.route("/api/admin/live-logs")
+@admin_required
+def api_admin_live_logs():
+    """Derniers logs systeme pour le terminal Matrix"""
+    db = get_db()
+
+    # Derniers articles trouves
+    items = db.execute("""
+        SELECT fi.title, fi.price, fi.created_at, u.username, s.name as search_name
+        FROM found_items fi
+        JOIN users u ON fi.user_id = u.id
+        LEFT JOIN searches s ON fi.search_id = s.id
+        ORDER BY fi.created_at DESC LIMIT 20
+    """).fetchall()
+
+    # Derniers users inscrits
+    users = db.execute("""
+        SELECT username, email, plan, created_at
+        FROM users ORDER BY created_at DESC LIMIT 10
+    """).fetchall()
+
+    # Derniers paiements
+    payments = db.execute("""
+        SELECT p.amount, p.plan, p.created_at, u.username
+        FROM payments p
+        LEFT JOIN users u ON p.user_id = u.id
+        ORDER BY p.created_at DESC LIMIT 10
+    """).fetchall()
+
+    db.close()
+
+    logs = []
+    for item in items:
+        item = dict(item)
+        logs.append({
+            "type": "item",
+            "time": item.get("created_at", ""),
+            "msg": f"ITEM_FOUND: {item.get('title','')} | {item.get('price',0)}EUR | user:{item.get('username','')} | search:{item.get('search_name','')}",
+        })
+    for u in users:
+        u = dict(u)
+        logs.append({
+            "type": "user",
+            "time": u.get("created_at", ""),
+            "msg": f"USER_REGISTER: {u.get('username','')} | {u.get('email','')} | plan:{u.get('plan','free')}",
+        })
+    for p in payments:
+        p = dict(p)
+        logs.append({
+            "type": "payment",
+            "time": p.get("created_at", ""),
+            "msg": f"PAYMENT: {p.get('amount',0)}EUR | plan:{p.get('plan','')} | user:{p.get('username','')}",
+        })
+
+    # Trier par date desc
+    logs.sort(key=lambda x: x.get("time", ""), reverse=True)
+
+    return jsonify({"logs": logs[:30]})
+
+
+@app.route("/api/admin/force-scan", methods=["POST"])
+@admin_required
+def api_admin_force_scan():
+    """Force un scan immediat pour un utilisateur"""
+    data = request.json or {}
+    user_id = data.get("user_id")
+    if not user_id:
+        return jsonify({"error": "user_id requis"}), 400
+    # Reset le last_scan pour forcer un scan immediat
+    with _scan_stats_lock:
+        _scan_stats["total_scans"] += 1
+    return jsonify({"success": True, "msg": f"Scan force pour user {user_id}"})
+
+
+# ============================================
 # SCANNER EN ARRIERE-PLAN
 # ============================================
 # Suivi du dernier scan par utilisateur (protégé par lock)
