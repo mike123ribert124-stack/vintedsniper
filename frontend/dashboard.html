@@ -409,6 +409,9 @@
     <div class="nav-item" onclick="showSection('settings')">
         <span class="icon">⚙️</span> Paramètres
     </div>
+    <div class="nav-item" onclick="showSection('autobuy')">
+        <span class="icon">🛒</span> Achat auto
+    </div>
 
     <div class="sidebar-bottom">
         <div class="user-block">
@@ -553,6 +556,100 @@
         </div>
     </div>
 
+    <!-- ── ACHAT AUTOMATIQUE ── -->
+    <div id="section-autobuy" style="display:none">
+        <div class="page-header">
+            <div>
+                <div class="page-title">Achat automatique</div>
+                <div class="page-subtitle">Configure le bot pour acheter ou envoyer des offres automatiquement</div>
+            </div>
+        </div>
+
+        <!-- Cookie Vinted -->
+        <div class="card">
+            <div class="settings-section">
+                <h3>🔑 Connexion Vinted</h3>
+                <div class="desc">Pour que le bot puisse acheter, il a besoin de ton cookie de session Vinted. Ce cookie est stocké de manière chiffrée.</div>
+                <div class="form-group">
+                    <label>Cookie de session (_vinted_fr_session)</label>
+                    <input type="password" id="autobuyVintedCookie" placeholder="Colle ton cookie ici...">
+                    <div class="help-text">
+                        1. Connecte-toi sur <strong>vinted.fr</strong> dans ton navigateur<br>
+                        2. Ouvre les outils dev (F12) → onglet <strong>Application</strong> → Cookies<br>
+                        3. Copie la valeur de <code>_vinted_fr_session</code>
+                    </div>
+                </div>
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <button class="btn btn-gold" onclick="saveVintedCookie()">Valider le cookie</button>
+                    <span id="cookieStatus" style="font-size:13px;"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Paramètres achat auto -->
+        <div class="card">
+            <div class="settings-section">
+                <h3>⚡ Activation</h3>
+                <div class="desc">Active ou désactive l'achat automatique. Quand un article correspond à tes critères de recherche, le bot agira selon le mode choisi.</div>
+                <div style="display:flex; align-items:center; gap:14px; margin-bottom:16px;">
+                    <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:14px; font-weight:600;">
+                        <input type="checkbox" id="autobuyEnabled" style="accent-color:var(--gold); width:18px; height:18px; cursor:pointer;">
+                        Achat automatique activé
+                    </label>
+                    <span id="autobuyStatusBadge" style="font-size:11px; font-weight:700; padding:3px 10px; border-radius:999px;"></span>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h3>🎯 Mode d'achat</h3>
+                <div class="desc">Choisis comment le bot agit quand il trouve un article correspondant.</div>
+                <div class="form-group">
+                    <select id="autobuyMode">
+                        <option value="offer">Envoyer une offre au vendeur (recommandé)</option>
+                        <option value="buy">Achat direct (nécessite un moyen de paiement sur Vinted)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h3>💰 Prix maximum</h3>
+                <div class="desc">Le bot n'achètera pas d'articles au-dessus de ce prix. Mets 0 pour pas de limite.</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Prix max (EUR)</label>
+                        <input type="number" id="autobuyMaxPrice" min="0" step="0.5" placeholder="Ex: 50">
+                    </div>
+                    <div class="form-group">
+                        <label>Limite d'achats / jour</label>
+                        <input type="number" id="autobuyDailyLimit" min="1" max="50" value="5" placeholder="5">
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h3>👕 Marques autorisées</h3>
+                <div class="desc">Si tu renseignes des marques, le bot n'achètera QUE ces marques. Laisse vide pour toutes les marques.</div>
+                <div class="form-group">
+                    <label>Marques (séparées par des virgules)</label>
+                    <input type="text" id="autobuyBrands" placeholder="Ex: Nike, Adidas, Jordan">
+                </div>
+            </div>
+
+            <button class="btn btn-gold" onclick="saveAutobuySettings()">Sauvegarder les paramètres</button>
+        </div>
+
+        <!-- Historique -->
+        <div class="card">
+            <div class="card-header">
+                <h3><span class="card-title-accent">📋</span> Historique des achats</h3>
+                <button class="btn btn-sm btn-outline" onclick="loadAutobuyHistory()">Rafraîchir</button>
+            </div>
+            <div id="autobuyHistoryList">
+                <p style="color:var(--text2);font-size:14px;padding:8px 0">Aucun achat pour le moment.</p>
+            </div>
+        </div>
+    </div>
+
 </div><!-- /main -->
 
 <!-- ── MOBILE NAV ── -->
@@ -561,6 +658,7 @@
     <button id="mnav-searches" onclick="showSection('searches', this)">🔍 Rech.</button>
     <button id="mnav-items" onclick="showSection('items', this)">📦 Articles</button>
     <button id="mnav-settings" onclick="showSection('settings', this)">⚙️ Params</button>
+    <button id="mnav-autobuy" onclick="showSection('autobuy', this)">🛒 Auto</button>
 </div>
 
 <!-- ── MODAL: Nouvelle recherche ── -->
@@ -686,6 +784,7 @@ async function init() {
         loadSearches();
         loadItems();
         renderSettings();
+        loadAutobuySettings();
         startSSE();
     } catch(e) {
         window.location.href = '/login';
@@ -839,7 +938,7 @@ function renderOnboardingChecklist() {
 // ACTIONS
 // ==========================================
 function showSection(name, sourceEl = null) {
-    ['overview', 'searches', 'items', 'settings'].forEach(s => {
+    ['overview', 'searches', 'items', 'settings', 'autobuy'].forEach(s => {
         document.getElementById('section-' + s).style.display = s === name ? 'block' : 'none';
     });
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
@@ -1035,6 +1134,117 @@ async function manageSubscription() {
     }
     btn.disabled = false;
     btn.textContent = 'Gérer / Annuler';
+}
+
+// ==========================================
+// ACHAT AUTOMATIQUE
+// ==========================================
+async function loadAutobuySettings() {
+    const data = await api('/api/autobuy/settings');
+    if (data.error) return;
+
+    document.getElementById('autobuyEnabled').checked = !!data.enabled;
+    document.getElementById('autobuyMode').value = data.mode || 'offer';
+    document.getElementById('autobuyMaxPrice').value = data.max_price || '';
+    document.getElementById('autobuyDailyLimit').value = data.daily_limit || 5;
+    document.getElementById('autobuyBrands').value = (data.brands || []).join(', ');
+
+    updateAutobuyBadge(!!data.enabled);
+
+    // Statut du cookie
+    const statusEl = document.getElementById('cookieStatus');
+    if (data.cookie_valid) {
+        statusEl.innerHTML = '<span style="color:var(--green);">✓ Cookie valide — connecté en tant que <strong>' + escHtml(data.vinted_username || '') + '</strong></span>';
+    } else if (data.has_cookie) {
+        statusEl.innerHTML = '<span style="color:var(--red);">✗ Cookie expiré — reconnecte-toi</span>';
+    } else {
+        statusEl.innerHTML = '<span style="color:var(--text2);">Aucun cookie configuré</span>';
+    }
+
+    loadAutobuyHistory();
+}
+
+function updateAutobuyBadge(enabled) {
+    const badge = document.getElementById('autobuyStatusBadge');
+    if (enabled) {
+        badge.textContent = 'ACTIF';
+        badge.style.background = 'var(--green-dim)';
+        badge.style.color = 'var(--green)';
+        badge.style.border = '1px solid rgba(45,217,138,.35)';
+    } else {
+        badge.textContent = 'INACTIF';
+        badge.style.background = 'var(--red-dim)';
+        badge.style.color = 'var(--red)';
+        badge.style.border = '1px solid rgba(255,85,115,.25)';
+    }
+}
+
+async function saveVintedCookie() {
+    const cookie = document.getElementById('autobuyVintedCookie').value.trim();
+    if (!cookie) { showToast('Colle ton cookie Vinted', true); return; }
+
+    const statusEl = document.getElementById('cookieStatus');
+    statusEl.innerHTML = '<span style="color:var(--text2);">Vérification en cours...</span>';
+
+    const data = await api('/api/autobuy/cookie', {
+        method: 'PUT',
+        body: JSON.stringify({ vinted_cookie: cookie })
+    });
+
+    if (data.valid) {
+        statusEl.innerHTML = '<span style="color:var(--green);">✓ Cookie valide — connecté en tant que <strong>' + escHtml(data.vinted_username || '') + '</strong></span>';
+        document.getElementById('autobuyVintedCookie').value = '';
+        showToast('Cookie Vinted validé !');
+    } else {
+        statusEl.innerHTML = '<span style="color:var(--red);">✗ ' + escHtml(data.error || 'Cookie invalide') + '</span>';
+        showToast(data.error || 'Cookie invalide', true);
+    }
+}
+
+async function saveAutobuySettings() {
+    const enabled = document.getElementById('autobuyEnabled').checked;
+    const mode = document.getElementById('autobuyMode').value;
+    const maxPrice = parseFloat(document.getElementById('autobuyMaxPrice').value) || 0;
+    const dailyLimit = parseInt(document.getElementById('autobuyDailyLimit').value) || 5;
+    const brandsRaw = document.getElementById('autobuyBrands').value;
+    const brands = brandsRaw ? brandsRaw.split(',').map(b => b.trim()).filter(b => b) : [];
+
+    const data = await api('/api/autobuy/settings', {
+        method: 'PUT',
+        body: JSON.stringify({ enabled, mode, max_price: maxPrice, daily_limit: dailyLimit, brands })
+    });
+
+    if (data.success) {
+        updateAutobuyBadge(enabled);
+        showToast('Paramètres achat auto sauvegardés !');
+    } else {
+        showToast(data.error || 'Erreur', true);
+    }
+}
+
+async function loadAutobuyHistory() {
+    const data = await api('/api/autobuy/history');
+    const container = document.getElementById('autobuyHistoryList');
+
+    if (!data.history || data.history.length === 0) {
+        container.innerHTML = '<p style="color:var(--text2);font-size:14px;padding:8px 0">Aucun achat pour le moment.</p>';
+        return;
+    }
+
+    container.innerHTML = data.history.map(h => {
+        const date = new Date(h.timestamp * 1000);
+        const dateStr = date.toLocaleDateString('fr-FR') + ' ' + date.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+        const typeLabel = h.type === 'buy' ? '🛒 Achat' : '💬 Offre';
+        const statusColor = h.status === 'completed' ? 'var(--green)' : h.status === 'sent' ? 'var(--cyan)' : 'var(--orange)';
+        return `
+            <div class="item-row">
+                <div class="item-info">
+                    <div class="title">${typeLabel} — Article #${h.item_id}</div>
+                    <div class="meta">${dateStr} · ${h.price}€ · <span style="color:${statusColor};font-weight:600">${escHtml(h.status)}</span></div>
+                </div>
+            </div>
+        `;
+    }).join('');
 }
 
 // ==========================================
