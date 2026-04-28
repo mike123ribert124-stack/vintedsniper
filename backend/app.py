@@ -340,6 +340,7 @@ def api_me():
             "discord_webhook": user.get("discord_webhook", ""),
             "telegram_chat_id": user.get("telegram_chat_id", ""),
             "is_admin": bool(user.get("is_admin", 0)),
+            "auto_buy_allowed": bool(plan.get("auto_buy") or user.get("is_admin")),
         },
         "plan": plan,
         "stats": stats,
@@ -889,8 +890,8 @@ def api_autobuy_settings():
     user = request.user
     plan = PLANS.get(user.get("plan", "free"), PLANS["free"])
 
-    if not plan.get("auto_buy"):
-        return jsonify({"error": "L'achat automatique necessite le plan Pro ou VIP"}), 403
+    if not plan.get("auto_buy") and not user.get("is_admin"):
+        return jsonify({"error": "L'achat automatique est reserve aux plans Pro et VIP"}), 403
 
     db = get_db()
     settings = db.execute(
@@ -929,8 +930,8 @@ def api_update_autobuy_settings():
     user = request.user
     plan = PLANS.get(user.get("plan", "free"), PLANS["free"])
 
-    if not plan.get("auto_buy"):
-        return jsonify({"error": "L'achat automatique necessite le plan Pro ou VIP"}), 403
+    if not plan.get("auto_buy") and not user.get("is_admin"):
+        return jsonify({"error": "L'achat automatique est reserve aux plans Pro et VIP"}), 403
 
     data = request.json or {}
     db = get_db()
@@ -973,8 +974,8 @@ def api_update_vinted_cookie():
     user = request.user
     plan = PLANS.get(user.get("plan", "free"), PLANS["free"])
 
-    if not plan.get("auto_buy"):
-        return jsonify({"error": "L'achat automatique necessite le plan Pro ou VIP"}), 403
+    if not plan.get("auto_buy") and not user.get("is_admin"):
+        return jsonify({"error": "L'achat automatique est reserve aux plans Pro et VIP"}), 403
 
     data = request.json or {}
     cookie = data.get("cookie", "").strip()
@@ -1006,8 +1007,8 @@ def api_manual_buy():
     user = request.user
     plan = PLANS.get(user.get("plan", "free"), PLANS["free"])
 
-    if not plan.get("auto_buy"):
-        return jsonify({"error": "L'achat automatique necessite le plan Pro ou VIP"}), 403
+    if not plan.get("auto_buy") and not user.get("is_admin"):
+        return jsonify({"error": "L'achat automatique est reserve aux plans Pro et VIP"}), 403
 
     vinted_cookie = user.get("vinted_cookie", "")
     if not vinted_cookie:

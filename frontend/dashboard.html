@@ -648,6 +648,9 @@
             <div class="user-name" id="userNameDisplay">...</div>
             <span class="plan-badge" id="planBadge">Free</span>
         </div>
+        <a class="nav-item" id="adminLink" href="/admin" style="display:none; color:var(--green);">
+            <span class="icon">👁️</span> Panel Admin
+        </a>
         <div class="nav-item" onclick="upgradePlan()" style="color:var(--gold2);">
             <span class="icon">⭐</span> Upgrade
         </div>
@@ -1016,6 +1019,10 @@ function applyTheme(plan, isAdmin) {
         document.body.classList.add(themeMap[plan] || 'theme-free');
         stopMatrixRain();
     }
+
+    // Afficher lien admin si admin
+    const adminLink = document.getElementById('adminLink');
+    if (adminLink) adminLink.style.display = isAdmin ? 'flex' : 'none';
 }
 
 function getPlanBadgeHTML(plan, isAdmin) {
@@ -1520,7 +1527,26 @@ async function manageSubscription() {
 // ==========================================
 // ACHAT AUTOMATIQUE
 // ==========================================
+function updateAutobuyVisibility() {
+    const allowed = userData && (userData.user.auto_buy_allowed || userData.user.is_admin);
+    // Nav sidebar
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(el => {
+        if (el.textContent.includes('Achat auto')) {
+            el.style.display = allowed ? 'flex' : 'none';
+        }
+    });
+    // Nav mobile
+    const mnavBtn = document.getElementById('mnav-autobuy');
+    if (mnavBtn) mnavBtn.style.display = allowed ? 'block' : 'none';
+}
+
 async function loadAutobuySettings() {
+    updateAutobuyVisibility();
+
+    const allowed = userData && (userData.user.auto_buy_allowed || userData.user.is_admin);
+    if (!allowed) return;
+
     const data = await api('/api/autobuy/settings');
     if (data.error) return;
 
@@ -1569,10 +1595,10 @@ async function saveVintedCookie() {
 
     const data = await api('/api/autobuy/cookie', {
         method: 'PUT',
-        body: JSON.stringify({ vinted_cookie: cookie })
+        body: JSON.stringify({ cookie: cookie })
     });
 
-    if (data.valid) {
+    if (data.success) {
         statusEl.innerHTML = '<span style="color:var(--green);">✓ Cookie valide — connecté en tant que <strong>' + escHtml(data.vinted_username || '') + '</strong></span>';
         document.getElementById('autobuyVintedCookie').value = '';
         showToast('Cookie Vinted validé !');
