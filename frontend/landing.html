@@ -481,13 +481,12 @@
         <div class="feature-card">
             <div class="feature-icon">🔔</div>
             <h3>Notifications multi-canal</h3>
-            <p>Discord, Telegram, Email et notifications navigateur en temps réel. Tu ne rates plus aucune bonne affaire, peu importe où tu es.</p>
+            <p>Discord, Telegram et notifications navigateur en temps réel. Tu ne rates plus aucune bonne affaire, peu importe où tu es.</p>
         </div>
-        <div class="feature-card" style="position:relative;">
-            <div class="feature-soon">BIENTÔT</div>
+        <div class="feature-card">
             <div class="feature-icon">🛒</div>
             <h3>Achat automatique</h3>
-            <p>Configure tes critères et le bot achète automatiquement les articles qui matchent. En cours de déploiement sur Pro et VIP.</p>
+            <p>Configure tes critères et le bot achète automatiquement les articles qui matchent. Disponible sur Pro et VIP.</p>
         </div>
         <div class="feature-card">
             <div class="feature-icon">📊</div>
@@ -557,7 +556,6 @@
                 <li><span class="check">✓</span> {{ plans.free.max_searches }} recherches actives</li>
                 <li><span class="check">✓</span> Scan toutes les {{ (plans.free.scan_interval / 60)|int }} min</li>
                 <li><span class="check">✓</span> Alertes Discord</li>
-                <li class="disabled"><span class="cross">✕</span> Alertes Email</li>
                 <li class="disabled"><span class="cross">✕</span> Alertes Telegram</li>
                 <li class="disabled"><span class="cross">✕</span> Achat automatique</li>
             </ul>
@@ -574,7 +572,6 @@
                 <li><span class="check">✓</span> {{ plans.basic.max_searches }} recherches actives</li>
                 <li><span class="check">✓</span> Scan toutes les {{ plans.basic.scan_interval }}s</li>
                 <li><span class="check">✓</span> Alertes Discord</li>
-                <li><span class="check">✓</span> Alertes Email</li>
                 <li class="disabled"><span class="cross">✕</span> Alertes Telegram</li>
                 <li class="disabled"><span class="cross">✕</span> Achat automatique</li>
             </ul>
@@ -591,9 +588,9 @@
             <ul class="price-features">
                 <li><span class="check">✓</span> {{ plans.pro.max_searches }} recherches actives</li>
                 <li><span class="check">✓</span> Scan toutes les {{ plans.pro.scan_interval }}s</li>
-                <li><span class="check">✓</span> Discord + Email + Navigateur</li>
+                <li><span class="check">✓</span> Discord + Navigateur</li>
                 <li class="disabled"><span class="cross">✕</span> Alertes Telegram</li>
-                <li class="disabled"><span class="cross">✕</span> Achat automatique <span class="soon-tag">(bientôt)</span></li>
+                <li><span class="check">✓</span> Achat automatique</li>
             </ul>
             <a href="/register?plan=pro" class="btn btn-gold">Choisir {{ plans.pro.name }}</a>
         </div>
@@ -608,9 +605,9 @@
             <ul class="price-features">
                 <li><span class="check">✓</span> {{ plans.vip.max_searches }} recherches actives</li>
                 <li><span class="check">✓</span> Scan toutes les {{ plans.vip.scan_interval }}s 🔥</li>
-                <li><span class="check">✓</span> Discord + Telegram + Email + Navigateur</li>
+                <li><span class="check">✓</span> Discord + Telegram + Navigateur</li>
                 <li><span class="check">✓</span> Support prioritaire</li>
-                <li class="disabled"><span class="cross">✕</span> Achat automatique <span class="soon-tag">(bientôt)</span></li>
+                <li><span class="check">✓</span> Achat automatique</li>
             </ul>
             <a href="/register?plan=vip" class="btn btn-outline" style="border-color:rgba(0,200,224,.4);color:var(--cyan);">Choisir {{ plans.vip.name }}</a>
         </div>
