@@ -1,1 +1,1 @@
-web: cd backend && gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --threads 8 --worker-class gthread
+web: cd backend && find . -name '*.pyc' -delete && find . -name '__pycache__' -type d -exec rm -rf {} + 2>/dev/null; gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --threads 8 --worker-class gthread
