@@ -356,8 +356,12 @@ def api_update_settings():
     db = get_db()
 
     if "discord_webhook" in data:
+        webhook = data["discord_webhook"].strip()
+        if webhook and not webhook.startswith("http"):
+            db.close()
+            return jsonify({"error": "Le webhook Discord doit commencer par https://"}), 400
         db.execute("UPDATE users SET discord_webhook = ? WHERE id = ?",
-                   (data["discord_webhook"], user["id"]))
+                   (webhook, user["id"]))
 
     if "telegram_chat_id" in data:
         db.execute("UPDATE users SET telegram_chat_id = ? WHERE id = ?",
@@ -1232,55 +1236,68 @@ def record_scan_event(items_count=0):
 @login_required
 def api_stats_performance():
     """Stats de performance pour VIP (vitesse scanner, taux succes)"""
-    user = request.user
-    plan = PLANS.get(user.get("plan", "free"), PLANS["free"])
+    try:
+        user = request.user
+        user_id = user.get("id") or user.get("user_id")
 
-    # Stats utilisateur
-    db = get_db()
-    user_stats = db.execute("""
-        SELECT
-            COUNT(*) as total_items,
-            COUNT(CASE WHEN found_at > strftime('%s','now','-1 day') THEN 1 END) as items_today
-        FROM found_items
-        WHERE user_id = ?
-    """, (user["id"],)).fetchone()
+        # Stats utilisateur
+        db = get_db()
+        try:
+            cutoff_24h = time.time() - 86400
+            user_stats = db.execute("""
+                SELECT
+                    COUNT(*) as total_items,
+                    COUNT(CASE WHEN found_at > ? THEN 1 END) as items_today
+                FROM found_items
+                WHERE user_id = ?
+            """, (cutoff_24h, user_id)).fetchone()
 
-    search_count = db.execute(
-        "SELECT COUNT(*) FROM searches WHERE user_id = ? AND is_active = 1",
-        (user["id"],)
-    ).fetchone()[0]
+            search_count = db.execute(
+                "SELECT COUNT(*) FROM searches WHERE user_id = ? AND is_active = 1",
+                (user_id,)
+            ).fetchone()[0]
+        except Exception as e:
+            logger.error(f"stats/performance db error: {e}")
+            user_stats = (0, 0)
+            search_count = 0
+        finally:
+            db.close()
 
-    # Achats auto
-    autobuy_stats = {"total": 0, "success": 0}
-    purchase_log = auto_buyer.get_purchase_history(user["id"], 100)
-    autobuy_stats["total"] = len(purchase_log)
-    autobuy_stats["success"] = sum(1 for p in purchase_log if p.get("status") in ("completed", "sent"))
+        # Achats auto
+        autobuy_stats = {"total": 0, "success": 0}
+        try:
+            purchase_log = auto_buyer.get_purchase_history(user_id, 100)
+            autobuy_stats["total"] = len(purchase_log)
+            autobuy_stats["success"] = sum(1 for p in purchase_log if p.get("status") in ("completed", "sent"))
+        except Exception:
+            pass
 
-    db.close()
+        with _scan_stats_lock:
+            uptime = time.time() - _scan_stats["start_time"]
+            scans_total = _scan_stats["total_scans"]
+            scans_per_min = round(scans_total / max(uptime / 60, 1), 1)
 
-    with _scan_stats_lock:
-        uptime = time.time() - _scan_stats["start_time"]
-        scans_total = _scan_stats["total_scans"]
-        scans_per_min = round(scans_total / max(uptime / 60, 1), 1)
-
-    return jsonify({
-        "scanner": {
-            "scans_total": scans_total,
-            "scans_per_min": scans_per_min,
-            "uptime_hours": round(uptime / 3600, 1),
-            "last_scan_ago": round(time.time() - _scan_stats["last_scan"]) if _scan_stats["last_scan"] else None,
-        },
-        "user": {
-            "total_items": user_stats[0] if user_stats else 0,
-            "items_today": user_stats[1] if user_stats else 0,
-            "active_searches": search_count,
-        },
-        "autobuy": autobuy_stats,
-        "plan_speed": {
-            "delay": {"free": 0.5, "basic": 0.3, "pro": 0.1, "vip": 0}.get(user.get("plan", "free"), 0.5),
-            "threads": {"free": 3, "basic": 5, "pro": 8, "vip": 10}.get(user.get("plan", "free"), 3),
-        },
-    })
+        return jsonify({
+            "scanner": {
+                "scans_total": scans_total,
+                "scans_per_min": scans_per_min,
+                "uptime_hours": round(uptime / 3600, 1),
+                "last_scan_ago": round(time.time() - _scan_stats["last_scan"]) if _scan_stats["last_scan"] else None,
+            },
+            "user": {
+                "total_items": user_stats[0] if user_stats else 0,
+                "items_today": user_stats[1] if user_stats else 0,
+                "active_searches": search_count,
+            },
+            "autobuy": autobuy_stats,
+            "plan_speed": {
+                "delay": {"free": 0.5, "basic": 0.3, "pro": 0.1, "vip": 0}.get(user.get("plan", "free"), 0.5),
+                "threads": {"free": 3, "basic": 5, "pro": 8, "vip": 10}.get(user.get("plan", "free"), 3),
+            },
+        })
+    except Exception as e:
+        logger.error(f"stats/performance error: {e}")
+        return jsonify({"error": "Erreur interne", "scanner": {}, "user": {}, "autobuy": {}, "plan_speed": {}}), 200
 
 
 # ============================================

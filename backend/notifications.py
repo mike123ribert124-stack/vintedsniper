@@ -57,7 +57,7 @@ class NotificationManager:
     # ==========================================
     def send_discord(self, webhook_url, item, search_name=""):
         """Envoie une alerte Discord avec embed riche"""
-        if not webhook_url:
+        if not webhook_url or not webhook_url.startswith("http"):
             return False
 
         price = item.get("price", 0)
