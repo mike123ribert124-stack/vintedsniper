@@ -59,9 +59,9 @@ class VintedEngine:
         return random.choice(agents)
 
     def _ensure_cookies(self, session_data):
-        """S'assure que les cookies sont valides"""
+        """S'assure que les cookies sont valides (refresh toutes les 5 min)"""
         now = time.time()
-        if session_data["cookies_ok"] and (now - session_data["last_refresh"]) < self._cookie_refresh_interval:
+        if session_data["cookies_ok"] and (now - session_data["last_refresh"]) < 300:
             return True
 
         try:
