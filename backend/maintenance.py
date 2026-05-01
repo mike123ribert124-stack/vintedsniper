@@ -71,7 +71,7 @@ def purge_old_notifications(days=30):
     try:
         cutoff = time.time() - (days * 86400)
         cursor = db.execute(
-            "DELETE FROM notifications_log WHERE created_at < ?",
+            "DELETE FROM notifications_log WHERE sent_at < ?",
             (cutoff,)
         )
         db.commit()
